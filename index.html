@@ -777,17 +777,37 @@
         let db = null;
         let isFirebaseConnected = false;
 
+        // Normalize phone number (628xx, 08xx, 8xx -> same number)
+        function normalizePhone(phone) {
+            if (!phone) return '';
+            // Remove all non-digit characters
+            let cleaned = phone.toString().replace(/\D/g, '');
+            
+            // Remove leading 62 (Indonesia country code)
+            if (cleaned.startsWith('62')) {
+                cleaned = cleaned.substring(2);
+            }
+            // Remove leading 0
+            if (cleaned.startsWith('0')) {
+                cleaned = cleaned.substring(1);
+            }
+            
+            return cleaned;
+        }
+
         // Get cart for current customer
         function getCart() {
             if (!currentCustomer) return [];
             const allCarts = JSON.parse(localStorage.getItem('varshaCarts')) || {};
-            return allCarts[currentCustomer.phone] || [];
+            const normalizedPhone = normalizePhone(currentCustomer.phone);
+            return allCarts[normalizedPhone] || [];
         }
 
         function saveCart(cart) {
             if (!currentCustomer) return;
             const allCarts = JSON.parse(localStorage.getItem('varshaCarts')) || {};
-            allCarts[currentCustomer.phone] = cart;
+            const normalizedPhone = normalizePhone(currentCustomer.phone);
+            allCarts[normalizedPhone] = cart;
             localStorage.setItem('varshaCarts', JSON.stringify(allCarts));
         }
 
@@ -1033,12 +1053,16 @@
 
         async function loginCustomer() {
             const phone = document.getElementById('loginPhone').value.trim().replace(/\D/g, '');
-            if (phone.length < 10) {
+            if (phone.length < 8) {
                 showToast('Nomor HP tidak valid!');
                 return;
             }
 
-            const customer = customers.find(c => c.phone === phone);
+            // Normalize input phone for comparison
+            const normalizedInput = normalizePhone(phone);
+            
+            // Find customer with matching normalized phone
+            const customer = customers.find(c => normalizePhone(c.phone) === normalizedInput);
             if (customer) {
                 currentCustomer = customer;
                 localStorage.setItem('varshaCurrentCustomer', JSON.stringify(customer));
@@ -1057,29 +1081,32 @@
             const phone = document.getElementById('regPhone').value.trim().replace(/\D/g, '');
             const address = document.getElementById('regAddress').value.trim();
 
-            if (!name || phone.length < 10 || !address) {
+            if (!name || phone.length < 8 || !address) {
                 showToast('Lengkapi semua data!');
                 return;
             }
 
-            // Check if phone already exists
-            if (customers.find(c => c.phone === phone)) {
+            // Normalize phone for comparison and storage
+            const normalizedPhone = normalizePhone(phone);
+
+            // Check if phone already exists (with normalization)
+            if (customers.find(c => normalizePhone(c.phone) === normalizedPhone)) {
                 showToast('Nomor HP sudah terdaftar!');
                 return;
             }
 
             const newCustomer = {
                 name,
-                phone,
+                phone: normalizedPhone, // Store normalized phone
                 address,
                 createdAt: new Date().toISOString()
             };
 
-            // Save to Firebase
-            await saveToFirebase('customers', phone, newCustomer);
-            customers.push({ id: phone, ...newCustomer });
+            // Save to Firebase with normalized phone as ID
+            await saveToFirebase('customers', normalizedPhone, newCustomer);
+            customers.push({ id: normalizedPhone, ...newCustomer });
 
-            currentCustomer = { id: phone, ...newCustomer };
+            currentCustomer = { id: normalizedPhone, ...newCustomer };
             localStorage.setItem('varshaCurrentCustomer', JSON.stringify(currentCustomer));
 
             closeCustomerModal();
@@ -1096,6 +1123,12 @@
             showToast('Berhasil keluar');
         }
 
+        // Format phone for display (add 0 prefix if needed)
+        function formatPhoneDisplay(phone) {
+            const normalized = normalizePhone(phone);
+            return '0' + normalized;
+        }
+
         function updateCustomerBar() {
             const info = document.getElementById('customerInfo');
             const btn = document.getElementById('customerBtn');
@@ -1107,7 +1140,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-800">${currentCustomer.name}</p>
-                        <p class="text-xs text-gray-500">${currentCustomer.phone}</p>
+                        <p class="text-xs text-gray-500">${formatPhoneDisplay(currentCustomer.phone)}</p>
                     </div>
                 `;
                 btn.textContent = 'Keluar';
@@ -1410,10 +1443,11 @@
             }, 0);
 
             const orderId = 'ORD' + Date.now();
+            const normalizedPhone = normalizePhone(currentCustomer.phone);
             const orderData = {
-                customerId: currentCustomer.phone,
+                customerId: normalizedPhone,
                 customerName: currentCustomer.name,
-                customerPhone: currentCustomer.phone,
+                customerPhone: normalizedPhone,
                 customerAddress: currentCustomer.address,
                 items: cart.map(item => {
                     const product = products.find(p => p.id.toString() === item.id.toString());
@@ -1474,10 +1508,10 @@
             }
             
             // Normalize phone number for comparison
-            const currentPhone = currentCustomer.phone.toString().replace(/\D/g, '');
+            const currentPhone = normalizePhone(currentCustomer.phone);
             
             const customerOrders = orders.filter(o => {
-                const orderPhone = (o.customerId || o.customerPhone || '').toString().replace(/\D/g, '');
+                const orderPhone = normalizePhone(o.customerId || o.customerPhone || '');
                 return orderPhone === currentPhone && 
                        o.status !== 'completed' && 
                        o.status !== 'cancelled';
@@ -1505,13 +1539,13 @@
             }
 
             // Normalize phone number for comparison
-            const currentPhone = currentCustomer.phone.toString().replace(/\D/g, '');
+            const currentPhone = normalizePhone(currentCustomer.phone);
             
             // Filter orders for current customer only and remove duplicates
             const seen = new Set();
             const customerOrders = orders.filter(o => {
                 // Normalize order's customer phone
-                const orderPhone = (o.customerId || o.customerPhone || '').toString().replace(/\D/g, '');
+                const orderPhone = normalizePhone(o.customerId || o.customerPhone || '');
                 
                 // Check if this order belongs to current customer
                 const isCurrentCustomer = orderPhone === currentPhone;
@@ -1713,7 +1747,7 @@
                     
                     <div class="bg-gray-50 rounded-lg p-2 mb-3">
                         <p class="font-medium text-sm text-gray-800">${order.customerName}</p>
-                        <p class="text-xs text-gray-500">${order.customerPhone}</p>
+                        <p class="text-xs text-gray-500">${formatPhoneDisplay(order.customerPhone)}</p>
                         <p class="text-xs text-gray-500">${order.customerAddress}</p>
                     </div>
 
@@ -1748,7 +1782,7 @@
                         </button>
                     ` : ''}
 
-                    <button onclick="chatCustomer('${order.customerPhone}', '${order.id}')" class="w-full mt-2 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-medium hover:bg-green-200">
+                    <button onclick="chatCustomer('62${normalizePhone(order.customerPhone)}', '${order.id}')" class="w-full mt-2 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-medium hover:bg-green-200">
                         <i class="fab fa-whatsapp mr-1"></i> Chat Customer
                     </button>
                 </div>
@@ -1857,10 +1891,10 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="font-semibold text-sm text-gray-800">${c.name}</p>
-                        <p class="text-xs text-gray-500">${c.phone}</p>
+                        <p class="text-xs text-gray-500">${formatPhoneDisplay(c.phone)}</p>
                         <p class="text-xs text-gray-400 truncate">${c.address}</p>
                     </div>
-                    <button onclick="chatCustomer('${c.phone}', '')" class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200">
+                    <button onclick="chatCustomer('62${normalizePhone(c.phone)}', '')" class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200">
                         <i class="fab fa-whatsapp text-sm"></i>
                     </button>
                 </div>
