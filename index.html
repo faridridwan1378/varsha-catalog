@@ -136,8 +136,8 @@
             <!-- Hero Banner -->
             <div id="heroBanner" class="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
                 <div id="heroEmoji" class="absolute right-0 top-0 opacity-20 text-9xl">🍇</div>
-                <h2 id="heroTitle" class="text-2xl font-bold mb-2 relative z-10">Selamat Datang! 👋</h2>
-                <p id="heroSubtitle" class="text-sm opacity-90 mb-4 relative z-10">Buah segar & berkualitas langsung dari kebun ke rumah Anda</p>
+                <h2 id="heroTitleDisplay" class="text-2xl font-bold mb-2 relative z-10">Selamat Datang! 👋</h2>
+                <p id="heroSubtitleDisplay" class="text-sm opacity-90 mb-4 relative z-10">Buah segar & berkualitas langsung dari kebun ke rumah Anda</p>
                 <button onclick="navigateTo('katalog')" class="bg-white text-green-600 px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition relative z-10">
                     Lihat Katalog <i class="fas fa-arrow-right ml-2"></i>
                 </button>
@@ -341,6 +341,12 @@
                     <button onclick="switchAdminTab('report')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
                         <i class="fas fa-file-excel mr-1"></i> Report
                     </button>
+                    <button onclick="switchAdminTab('hero')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-image mr-1"></i> Hero
+                    </button>
+                    <button onclick="switchAdminTab('firebase')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-fire mr-1"></i> Firebase
+                    </button>
                 </div>
 
                 <!-- Orders Tab -->
@@ -493,6 +499,164 @@
                         <button onclick="downloadFromFirebase()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition">
                             <i class="fas fa-cloud-download-alt mr-2"></i>Download dari Firebase
                         </button>
+                    </div>
+                </div>
+
+                <!-- Hero Tab -->
+                <div id="heroTab" class="hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-image text-green-500"></i> Hero Banner Utama
+                        </h3>
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Judul Hero</label>
+                            <input type="text" id="heroTitle" placeholder="Selamat Datang! 👋" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Subtitle Hero</label>
+                            <input type="text" id="heroSubtitleInput" placeholder="Buah segar & berkualitas..." class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Emoji Dekorasi</label>
+                                <input type="text" id="heroEmojiInput" placeholder="🍇" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl" maxlength="2">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Atau URL Gambar</label>
+                                <input type="url" id="heroImageUrl" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Dari</label>
+                                <select id="heroColorFrom" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
+                                    <option value="green-500">Hijau</option>
+                                    <option value="orange-500">Oranye</option>
+                                    <option value="blue-500">Biru</option>
+                                    <option value="purple-500">Ungu</option>
+                                    <option value="red-500">Merah</option>
+                                    <option value="yellow-500">Kuning</option>
+                                    <option value="pink-500">Pink</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Ke</label>
+                                <select id="heroColorTo" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
+                                    <option value="green-600">Hijau Tua</option>
+                                    <option value="orange-600">Oranye Tua</option>
+                                    <option value="blue-600">Biru Tua</option>
+                                    <option value="purple-600">Ungu Tua</option>
+                                    <option value="red-600">Merah Tua</option>
+                                    <option value="yellow-600">Kuning Tua</option>
+                                    <option value="pink-600">Pink Tua</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="heroPreview" class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white relative overflow-hidden mb-3">
+                            <div id="heroPreviewDecor" class="absolute right-0 top-0 opacity-20 text-6xl">🍇</div>
+                            <h4 id="heroPreviewTitle" class="font-bold text-lg relative z-10">Selamat Datang! 👋</h4>
+                            <p id="heroPreviewSubtitle" class="text-xs opacity-90 relative z-10">Buah segar & berkualitas</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-bullhorn text-orange-500"></i> Banner Promo
+                        </h3>
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Judul Promo</label>
+                            <input type="text" id="promoTitleInput" placeholder="Buah Segar Setiap Hari!" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Subtitle Promo</label>
+                            <input type="text" id="promoSubtitleInput" placeholder="Kualitas terbaik untuk keluarga Anda" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                        </div>
+                        <div id="promoPreview" class="bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl p-4 text-white relative overflow-hidden">
+                            <div class="absolute right-2 bottom-2 opacity-30 text-5xl">🍊</div>
+                            <h4 id="promoPreviewTitle" class="font-bold relative z-10">Buah Segar Setiap Hari!</h4>
+                            <p id="promoPreviewSubtitle" class="text-xs opacity-90 relative z-10">Kualitas terbaik untuk keluarga Anda</p>
+                        </div>
+                    </div>
+
+                    <button onclick="saveHeroSettings()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
+                        <i class="fas fa-save mr-2"></i> Simpan Pengaturan Hero
+                    </button>
+                </div>
+
+                <!-- Firebase Tab -->
+                <div id="firebaseTab" class="hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                            <span class="font-semibold text-green-800">Firebase Sudah Dikonfigurasi</span>
+                        </div>
+                        <p class="text-sm text-green-700">Aplikasi sudah terhubung otomatis ke Firebase. Konfigurasi di bawah bisa diubah jika diperlukan.</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-cog text-orange-500"></i> Konfigurasi Firebase
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">API Key</label>
+                                <input type="text" id="fbApiKey" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Auth Domain</label>
+                                <input type="text" id="fbAuthDomain" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Project ID</label>
+                                <input type="text" id="fbProjectId" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Storage Bucket</label>
+                                <input type="text" id="fbStorageBucket" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Messaging Sender ID</label>
+                                <input type="text" id="fbMessagingSenderId" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">App ID</label>
+                                <input type="text" id="fbAppId" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono">
+                            </div>
+                        </div>
+                        <button onclick="saveFirebaseConfig()" class="w-full mt-4 bg-orange-500 text-white py-2 rounded-xl font-medium hover:bg-orange-600 transition">
+                            <i class="fas fa-save mr-2"></i>Simpan & Hubungkan Ulang
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-sync text-blue-500"></i> Sinkronisasi Data
+                        </h3>
+                        <button onclick="uploadAllToFirebase()" class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium hover:bg-blue-600 transition mb-2">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i>Upload Semua ke Firebase
+                        </button>
+                        <button onclick="downloadFromFirebase()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition mb-2">
+                            <i class="fas fa-cloud-download-alt mr-2"></i>Download dari Firebase
+                        </button>
+                        <button onclick="resetToDefault()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition">
+                            <i class="fas fa-undo mr-2"></i>Reset ke Default
+                        </button>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <h4 class="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-500"></i> Panduan Setup Firebase
+                        </h4>
+                        <ol class="text-xs text-gray-500 space-y-1 list-decimal list-inside">
+                            <li>Buka <a href="https://console.firebase.google.com" target="_blank" class="text-blue-500 underline">Firebase Console</a></li>
+                            <li>Buat project baru atau pilih yang sudah ada</li>
+                            <li>Aktifkan Firestore Database (test mode)</li>
+                            <li>Daftarkan Web App dan salin konfigurasi</li>
+                            <li>Masukkan konfigurasi di form di atas</li>
+                        </ol>
+                        <a href="FIREBASE_SETUP.md" target="_blank" class="mt-3 inline-block text-sm text-blue-500 hover:underline">
+                            <i class="fas fa-external-link-alt mr-1"></i> Baca Panduan Lengkap
+                        </a>
                     </div>
                 </div>
 
@@ -761,6 +925,17 @@
             banks: []
         };
 
+        const defaultHeroSettings = {
+            title: 'Selamat Datang! 👋',
+            subtitle: 'Buah segar & berkualitas langsung dari kebun ke rumah Anda',
+            emoji: '🍇',
+            imageUrl: '',
+            colorFrom: 'green-500',
+            colorTo: 'green-600',
+            promoTitle: 'Buah Segar Setiap Hari!',
+            promoSubtitle: 'Kualitas terbaik untuk keluarga Anda'
+        };
+
         // State Variables
         let products = [];
         let customers = [];
@@ -769,6 +944,7 @@
         const _0x = atob('MjkwNzA3');
         let settings = JSON.parse(localStorage.getItem('varshaSettings')) || { waNumber: '6281234567890', pin: _0x };
         let storeProfile = JSON.parse(localStorage.getItem('varshaStoreProfile')) || { ...defaultStoreProfile };
+        let heroSettings = JSON.parse(localStorage.getItem('varshaHeroSettings')) || { ...defaultHeroSettings };
         let firebaseConfig = JSON.parse(localStorage.getItem('varshaFirebaseConfig')) || defaultFirebaseConfig;
         let isAdminLoggedIn = false;
         let currentCategory = 'all';
@@ -849,6 +1025,10 @@
                 // Load profile
                 const profileDoc = await db.collection('settings').doc('profile').get();
                 if (profileDoc.exists) storeProfile = { ...defaultStoreProfile, ...profileDoc.data() };
+
+                // Load hero settings
+                const heroDoc = await db.collection('settings').doc('hero').get();
+                if (heroDoc.exists) heroSettings = { ...defaultHeroSettings, ...heroDoc.data() };
 
                 // Load customers
                 const customersSnap = await db.collection('customers').get();
@@ -1167,6 +1347,7 @@
             updateOrderBadge();
             updateDisplayWA();
             applyStoreProfile();
+            applyHeroSettings();
             updateCustomerBar();
             renderCart();
             renderCustomerOrders();
@@ -1692,10 +1873,14 @@
         function switchAdminTab(tab) {
             document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
             event.currentTarget.classList.add('active');
-            ['orders', 'customers', 'catalog', 'store', 'settings', 'report'].forEach(t => {
+            ['orders', 'customers', 'catalog', 'store', 'settings', 'report', 'hero', 'firebase'].forEach(t => {
                 document.getElementById(t + 'Tab').classList.add('hidden');
             });
             document.getElementById(tab + 'Tab').classList.remove('hidden');
+            
+            // Load data for specific tabs
+            if (tab === 'hero') loadHeroSettingsToForm();
+            if (tab === 'firebase') loadFirebaseConfigToForm();
         }
 
         // Admin Orders
@@ -2379,6 +2564,170 @@
                 cancelled: 'Dibatalkan'
             };
             return labels[status] || status;
+        }
+
+        // Hero Settings Functions
+        function loadHeroSettingsToForm() {
+            document.getElementById('heroTitle').value = heroSettings.title || defaultHeroSettings.title;
+            document.getElementById('heroSubtitleInput').value = heroSettings.subtitle || defaultHeroSettings.subtitle;
+            document.getElementById('heroEmojiInput').value = heroSettings.emoji || defaultHeroSettings.emoji;
+            document.getElementById('heroImageUrl').value = heroSettings.imageUrl || '';
+            document.getElementById('heroColorFrom').value = heroSettings.colorFrom || 'green-500';
+            document.getElementById('heroColorTo').value = heroSettings.colorTo || 'green-600';
+            document.getElementById('promoTitleInput').value = heroSettings.promoTitle || defaultHeroSettings.promoTitle;
+            document.getElementById('promoSubtitleInput').value = heroSettings.promoSubtitle || defaultHeroSettings.promoSubtitle;
+            
+            updateHeroPreview();
+            
+            // Add event listeners for real-time preview
+            ['heroTitle', 'heroSubtitleInput', 'heroEmojiInput', 'heroImageUrl', 'heroColorFrom', 'heroColorTo', 'promoTitleInput', 'promoSubtitleInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', updateHeroPreview);
+            });
+        }
+
+        function updateHeroPreview() {
+            const title = document.getElementById('heroTitle').value || defaultHeroSettings.title;
+            const subtitle = document.getElementById('heroSubtitleInput').value || defaultHeroSettings.subtitle;
+            const emoji = document.getElementById('heroEmojiInput').value || defaultHeroSettings.emoji;
+            const imageUrl = document.getElementById('heroImageUrl').value;
+            const colorFrom = document.getElementById('heroColorFrom').value || 'green-500';
+            const colorTo = document.getElementById('heroColorTo').value || 'green-600';
+            const promoTitle = document.getElementById('promoTitleInput').value || defaultHeroSettings.promoTitle;
+            const promoSubtitle = document.getElementById('promoSubtitleInput').value || defaultHeroSettings.promoSubtitle;
+            
+            // Update hero preview
+            const heroPreview = document.getElementById('heroPreview');
+            heroPreview.className = `bg-gradient-to-r from-${colorFrom} to-${colorTo} rounded-xl p-4 text-white relative overflow-hidden mb-3`;
+            
+            const heroDecor = document.getElementById('heroPreviewDecor');
+            if (imageUrl) {
+                heroDecor.innerHTML = `<img src="${imageUrl}" class="w-16 h-16 object-cover rounded-lg opacity-50">`;
+            } else {
+                heroDecor.innerHTML = emoji;
+            }
+            
+            document.getElementById('heroPreviewTitle').textContent = title;
+            document.getElementById('heroPreviewSubtitle').textContent = subtitle;
+            
+            // Update promo preview
+            document.getElementById('promoPreviewTitle').textContent = promoTitle;
+            document.getElementById('promoPreviewSubtitle').textContent = promoSubtitle;
+        }
+
+        async function saveHeroSettings() {
+            heroSettings = {
+                title: document.getElementById('heroTitle').value.trim() || defaultHeroSettings.title,
+                subtitle: document.getElementById('heroSubtitleInput').value.trim() || defaultHeroSettings.subtitle,
+                emoji: document.getElementById('heroEmojiInput').value.trim() || defaultHeroSettings.emoji,
+                imageUrl: document.getElementById('heroImageUrl').value.trim(),
+                colorFrom: document.getElementById('heroColorFrom').value || 'green-500',
+                colorTo: document.getElementById('heroColorTo').value || 'green-600',
+                promoTitle: document.getElementById('promoTitleInput').value.trim() || defaultHeroSettings.promoTitle,
+                promoSubtitle: document.getElementById('promoSubtitleInput').value.trim() || defaultHeroSettings.promoSubtitle
+            };
+            
+            localStorage.setItem('varshaHeroSettings', JSON.stringify(heroSettings));
+            await saveToFirebase('settings', 'hero', heroSettings);
+            applyHeroSettings();
+            showToast('Pengaturan Hero berhasil disimpan! ✓');
+        }
+
+        function applyHeroSettings() {
+            const heroBanner = document.getElementById('heroBanner');
+            const heroEmoji = document.getElementById('heroEmoji');
+            const heroTitleDisplay = document.getElementById('heroTitleDisplay');
+            const heroSubtitleDisplay = document.getElementById('heroSubtitleDisplay');
+            const promoTitleEl = document.getElementById('promoTitle');
+            const promoSubtitleEl = document.getElementById('promoSubtitle');
+            
+            // Apply hero banner styles
+            if (heroBanner) {
+                heroBanner.className = `bg-gradient-to-r from-${heroSettings.colorFrom || 'green-500'} to-${heroSettings.colorTo || 'green-600'} rounded-2xl p-6 mb-6 text-white relative overflow-hidden`;
+            }
+            
+            // Apply emoji or image
+            if (heroEmoji) {
+                if (heroSettings.imageUrl) {
+                    heroEmoji.innerHTML = `<img src="${heroSettings.imageUrl}" class="w-24 h-24 object-cover rounded-xl opacity-50">`;
+                    heroEmoji.className = 'absolute right-2 top-2';
+                } else {
+                    heroEmoji.textContent = heroSettings.emoji || '🍇';
+                    heroEmoji.className = 'absolute right-0 top-0 opacity-20 text-9xl';
+                }
+            }
+            
+            // Apply hero title and subtitle
+            if (heroTitleDisplay) heroTitleDisplay.textContent = heroSettings.title || defaultHeroSettings.title;
+            if (heroSubtitleDisplay) heroSubtitleDisplay.textContent = heroSettings.subtitle || defaultHeroSettings.subtitle;
+            
+            // Apply promo banner
+            if (promoTitleEl) promoTitleEl.textContent = heroSettings.promoTitle || defaultHeroSettings.promoTitle;
+            if (promoSubtitleEl) promoSubtitleEl.textContent = heroSettings.promoSubtitle || defaultHeroSettings.promoSubtitle;
+        }
+
+        // Firebase Config Functions
+        function loadFirebaseConfigToForm() {
+            document.getElementById('fbApiKey').value = firebaseConfig.apiKey || '';
+            document.getElementById('fbAuthDomain').value = firebaseConfig.authDomain || '';
+            document.getElementById('fbProjectId').value = firebaseConfig.projectId || '';
+            document.getElementById('fbStorageBucket').value = firebaseConfig.storageBucket || '';
+            document.getElementById('fbMessagingSenderId').value = firebaseConfig.messagingSenderId || '';
+            document.getElementById('fbAppId').value = firebaseConfig.appId || '';
+        }
+
+        async function saveFirebaseConfig() {
+            const newConfig = {
+                apiKey: document.getElementById('fbApiKey').value.trim(),
+                authDomain: document.getElementById('fbAuthDomain').value.trim(),
+                projectId: document.getElementById('fbProjectId').value.trim(),
+                storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+                messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+                appId: document.getElementById('fbAppId').value.trim()
+            };
+            
+            if (!newConfig.apiKey || !newConfig.projectId) {
+                showToast('API Key dan Project ID wajib diisi!');
+                return;
+            }
+            
+            firebaseConfig = newConfig;
+            localStorage.setItem('varshaFirebaseConfig', JSON.stringify(firebaseConfig));
+            
+            showToast('Konfigurasi disimpan, menghubungkan ulang...');
+            
+            // Reinitialize Firebase
+            try {
+                if (firebase.apps.length) {
+                    await firebase.app().delete();
+                }
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                await loadFromFirebase();
+                showToast('Berhasil terhubung ke Firebase! ✓');
+            } catch (e) {
+                console.error('Reconnect error:', e);
+                showToast('Gagal menghubungkan: ' + e.message);
+            }
+        }
+
+        function resetToDefault() {
+            if (!confirm('Reset semua data ke default? Data lokal akan dihapus!')) return;
+            
+            localStorage.removeItem('varshaProducts');
+            localStorage.removeItem('varshaSettings');
+            localStorage.removeItem('varshaStoreProfile');
+            localStorage.removeItem('varshaHeroSettings');
+            localStorage.removeItem('varshaCarts');
+            
+            products = [...defaultProducts];
+            settings = { waNumber: '6281234567890', pin: atob('MjkwNzA3') };
+            storeProfile = { ...defaultStoreProfile };
+            heroSettings = { ...defaultHeroSettings };
+            
+            renderAll();
+            applyHeroSettings();
+            showToast('Data berhasil direset ke default! ✓');
         }
 
         // Navigation
