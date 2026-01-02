@@ -12,6 +12,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
     <style>
         * { font-family: 'Poppins', sans-serif; }
         :root {
@@ -28,8 +31,10 @@
         .nav-item.active i { transform: scale(1.2); }
         .page { display: none; }
         .page.active { display: block; }
+        .btn-primary { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+        .btn-primary:hover { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
         .btn-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); }
-        .btn-whatsapp:hover { background: linear-gradient(135deg, #128c7e 0%, #25d366 100%); }
+        .btn-order { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .badge { position: absolute; top: -8px; right: -8px; background: #f97316; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
@@ -48,6 +53,13 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .social-icon { transition: all 0.2s ease; }
         .social-icon:hover { transform: scale(1.1); }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-confirmed { background: #dbeafe; color: #1e40af; }
+        .status-shipped { background: #d1fae5; color: #065f46; }
+        .status-completed { background: #dcfce7; color: #166534; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .order-card { transition: all 0.2s ease; }
+        .order-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-gray-50 pb-20">
@@ -63,7 +75,7 @@
     <header class="gradient-header text-white p-4 sticky top-0 z-40 shadow-lg">
         <div class="flex items-center justify-between max-w-lg mx-auto">
             <div class="flex items-center gap-3">
-                <button onclick="navigateToPage('home')" class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-105 transition cursor-pointer overflow-hidden">
+                <button onclick="navigateTo('home')" class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-105 transition cursor-pointer overflow-hidden">
                     <img id="headerLogo" src="" alt="Logo" class="w-full h-full object-cover hidden">
                     <span id="headerLogoEmoji" class="text-2xl">🍊</span>
                 </button>
@@ -82,18 +94,33 @@
                 <button onclick="showSearch()" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition" title="Cari">
                     <i class="fas fa-search"></i>
                 </button>
-                <button onclick="navigateToPage('home')" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition" title="Home">
+                <button onclick="navigateTo('home')" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition" title="Home">
                     <i class="fas fa-home"></i>
                 </button>
-                <button onclick="navigateToPage('profil')" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition" title="Profil">
-                    <i class="fas fa-user"></i>
+                <button onclick="navigateTo('profil')" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition" title="Profil">
+                    <i class="fas fa-store"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Search Bar (Hidden by default) -->
-    <div id="searchBar" class="hidden bg-white p-4 shadow-md sticky top-[76px] z-30">
+    <!-- Customer Bar -->
+    <div id="customerBar" class="bg-white border-b border-gray-200 px-4 py-2 sticky top-[76px] z-30">
+        <div class="max-w-lg mx-auto flex items-center justify-between">
+            <div id="customerInfo" class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-gray-400 text-sm"></i>
+                </div>
+                <span class="text-sm text-gray-500">Belum login</span>
+            </div>
+            <button onclick="showCustomerModal()" id="customerBtn" class="text-sm bg-green-500 text-white px-4 py-1.5 rounded-full font-medium hover:bg-green-600 transition">
+                Masuk / Daftar
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div id="searchBar" class="hidden bg-white p-4 shadow-md sticky top-[116px] z-30">
         <div class="max-w-lg mx-auto flex gap-2">
             <input type="text" id="searchInput" placeholder="Cari produk..." class="flex-1 px-4 py-2 border border-gray-200 rounded-xl" oninput="searchProducts()">
             <button onclick="hideSearch()" class="px-4 py-2 bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200">
@@ -156,7 +183,6 @@
         <div id="katalogPage" class="page fade-in">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Katalog Produk</h2>
             
-            <!-- Category Filter -->
             <div class="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
                 <button onclick="filterByCategory('all')" class="category-btn active px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">Semua</button>
                 <button onclick="filterByCategory('Buah')" class="category-btn px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">🍎 Buah</button>
@@ -179,12 +205,24 @@
             </div>
             <div id="cartSummary" class="hidden bg-white rounded-2xl shadow-lg p-4 mt-4">
                 <div class="flex justify-between mb-4">
-                    <span class="font-bold text-lg">Total</span>
+                    <span class="font-bold text-lg">Total Belanja</span>
                     <span id="totalPrice" class="font-bold text-lg text-green-600">Rp 0</span>
                 </div>
-                <button onclick="checkoutWhatsApp()" class="btn-whatsapp w-full text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:shadow-lg transition">
-                    <i class="fab fa-whatsapp text-xl"></i> Pesan via WhatsApp
+                <button onclick="sendOrder()" class="btn-order w-full text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:shadow-lg transition">
+                    <i class="fas fa-paper-plane text-lg"></i> Kirim Order
                 </button>
+                <p class="text-xs text-gray-500 text-center mt-2">*Ongkir akan dikonfirmasi oleh admin</p>
+            </div>
+        </div>
+
+        <!-- Pesanan Page -->
+        <div id="pesananPage" class="page fade-in">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Pesanan Saya</h2>
+            <div id="ordersList"></div>
+            <div id="ordersEmpty" class="text-center py-12">
+                <span class="text-6xl">📋</span>
+                <p class="text-gray-500 mt-4">Belum ada pesanan</p>
+                <button onclick="navigateTo('katalog')" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Mulai Belanja</button>
             </div>
         </div>
 
@@ -192,7 +230,6 @@
         <div id="profilPage" class="page fade-in">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Profil Toko</h2>
             
-            <!-- Store Info Card -->
             <div class="bg-white rounded-2xl shadow-lg p-6 mb-4 text-center">
                 <div id="profileLogoContainer" class="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
                     <img id="profileLogo" src="" alt="Logo" class="w-full h-full object-cover hidden">
@@ -206,7 +243,6 @@
                 </div>
             </div>
 
-            <!-- Contact & Location -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-4">
                 <div class="p-4 border-b flex items-center gap-4">
                     <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -237,7 +273,6 @@
                 </div>
             </div>
 
-            <!-- Social Media -->
             <div id="socialMediaSection" class="bg-white rounded-2xl shadow-lg p-4 mb-4">
                 <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <i class="fas fa-share-alt text-purple-500"></i> Sosial Media
@@ -245,7 +280,6 @@
                 <div id="socialMediaLinks" class="flex flex-wrap gap-3"></div>
             </div>
 
-            <!-- Bank Account -->
             <div id="bankSection" class="bg-white rounded-2xl shadow-lg p-4 mb-4">
                 <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <i class="fas fa-credit-card text-blue-500"></i> Rekening Pembayaran
@@ -253,7 +287,6 @@
                 <div id="bankAccounts" class="space-y-3"></div>
             </div>
 
-            <!-- Firebase Status -->
             <div class="bg-white rounded-2xl shadow-lg p-4">
                 <div class="flex items-center gap-3">
                     <div id="firebaseStatusIcon" class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -271,7 +304,6 @@
         <div id="adminPage" class="page fade-in">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Panel Admin</h2>
             
-            <!-- Login Section -->
             <div id="adminLogin" class="bg-white rounded-2xl shadow-lg p-6">
                 <div class="text-center mb-6">
                     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -284,207 +316,73 @@
                 <button onclick="loginAdmin()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">Masuk</button>
             </div>
 
-            <!-- Admin Panel -->
             <div id="adminPanel" class="hidden">
-                <!-- Firebase Connection Status -->
                 <div id="adminFirebaseStatus" class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 flex items-center gap-3">
                     <i class="fas fa-cloud text-yellow-600"></i>
                     <span class="text-sm text-yellow-800">Menghubungkan ke Firebase...</span>
                 </div>
 
-                <!-- Admin Tabs -->
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    <button onclick="switchAdminTab('store')" class="admin-tab active px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
-                        <i class="fas fa-store mr-1"></i> Toko
+                    <button onclick="switchAdminTab('orders')" class="admin-tab active px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-clipboard-list mr-1"></i> Pesanan
+                    </button>
+                    <button onclick="switchAdminTab('customers')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-users mr-1"></i> Customers
                     </button>
                     <button onclick="switchAdminTab('catalog')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
                         <i class="fas fa-box mr-1"></i> Katalog
                     </button>
-                    <button onclick="switchAdminTab('hero')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
-                        <i class="fas fa-image mr-1"></i> Hero
+                    <button onclick="switchAdminTab('store')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-store mr-1"></i> Toko
                     </button>
                     <button onclick="switchAdminTab('settings')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
                         <i class="fas fa-cog mr-1"></i> Pengaturan
                     </button>
-                    <button onclick="switchAdminTab('firebase')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
-                        <i class="fas fa-database mr-1"></i> Firebase
+                    <button onclick="switchAdminTab('report')" class="admin-tab px-4 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap transition">
+                        <i class="fas fa-file-excel mr-1"></i> Report
                     </button>
                 </div>
 
-                <!-- Store Tab -->
-                <div id="storeTab">
-                    <!-- Logo Setting -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-image text-green-500"></i> Logo Toko
-                        </h3>
-                        <div class="flex items-center gap-4 mb-3">
-                            <div id="adminLogoPreview" class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                                <span class="text-4xl">🍊</span>
-                            </div>
-                            <div class="flex-1">
-                                <input type="url" id="storeLogo" placeholder="URL Logo (kosongkan untuk emoji)" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm mb-2">
-                                <input type="text" id="storeEmoji" placeholder="Emoji default: 🍊" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" maxlength="2">
-                            </div>
-                        </div>
+                <!-- Orders Tab -->
+                <div id="ordersTab">
+                    <div class="flex gap-2 mb-4 overflow-x-auto">
+                        <button onclick="filterOrders('all')" class="order-filter active px-3 py-1.5 bg-gray-800 text-white rounded-full text-xs font-medium">Semua</button>
+                        <button onclick="filterOrders('pending')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Menunggu</button>
+                        <button onclick="filterOrders('confirmed')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Dikonfirmasi</button>
+                        <button onclick="filterOrders('shipped')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Dikirim</button>
+                        <button onclick="filterOrders('completed')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Selesai</button>
                     </div>
-
-                    <!-- Store Name & Tagline -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-store text-blue-500"></i> Nama & Tagline
-                        </h3>
-                        <input type="text" id="storeName" placeholder="Nama Toko" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
-                        <input type="text" id="storeTagline" placeholder="Tagline Toko" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    <div id="adminOrdersList" class="space-y-3"></div>
+                    <div id="adminOrdersEmpty" class="text-center py-8 hidden">
+                        <span class="text-4xl">📋</span>
+                        <p class="text-gray-500 mt-2">Belum ada pesanan</p>
                     </div>
-
-                    <!-- Address & Hours -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-map-marker-alt text-orange-500"></i> Lokasi & Jam Operasional
-                        </h3>
-                        <textarea id="storeAddress" rows="2" placeholder="Alamat lengkap toko" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3 resize-none"></textarea>
-                        <input type="text" id="storeHours" placeholder="Contoh: 08:00 - 21:00 WIB" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
-                    </div>
-
-                    <!-- Social Media -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-share-alt text-purple-500"></i> Sosial Media
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fab fa-instagram text-pink-500"></i> Instagram</label>
-                                <input type="text" id="socialInstagram" placeholder="username" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fab fa-facebook text-blue-600"></i> Facebook</label>
-                                <input type="text" id="socialFacebook" placeholder="username" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fab fa-tiktok text-black"></i> TikTok</label>
-                                <input type="text" id="socialTiktok" placeholder="username" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fab fa-shopee text-orange-500"></i> Shopee</label>
-                                <input type="text" id="socialShopee" placeholder="username" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fas fa-store text-green-500"></i> Tokopedia</label>
-                                <input type="text" id="socialTokopedia" placeholder="username" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block"><i class="fab fa-youtube text-red-500"></i> YouTube</label>
-                                <input type="text" id="socialYoutube" placeholder="channel" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bank Accounts -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-credit-card text-blue-500"></i> Rekening Bank
-                        </h3>
-                        <div id="bankAccountsAdmin" class="space-y-3 mb-3"></div>
-                        <div class="grid grid-cols-3 gap-2 mb-3">
-                            <input type="text" id="newBankName" placeholder="Bank" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            <input type="text" id="newBankNumber" placeholder="No. Rekening" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                            <input type="text" id="newBankHolder" placeholder="Atas Nama" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
-                        </div>
-                        <button onclick="addBankAccount()" class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium hover:bg-blue-600 transition text-sm">
-                            <i class="fas fa-plus mr-2"></i>Tambah Rekening
-                        </button>
-                    </div>
-
-                    <button onclick="saveStoreProfile()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition mb-4">
-                        <i class="fas fa-save mr-2"></i> Simpan Profil Toko
-                    </button>
                 </div>
 
-                <!-- Hero Tab -->
-                <div id="heroTab" class="hidden">
-                    <!-- Main Hero Banner -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-image text-green-500"></i> Hero Banner Utama
-                        </h3>
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-500 mb-1 block">Judul</label>
-                            <input type="text" id="heroTitleInput" placeholder="Selamat Datang! 👋" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                <!-- Customers Tab -->
+                <div id="customersTab" class="hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-gray-800">
+                                <i class="fas fa-users text-blue-500 mr-2"></i> Daftar Customer
+                            </h3>
+                            <span id="customerCount" class="text-sm text-gray-500">0 customer</span>
                         </div>
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-500 mb-1 block">Subtitle</label>
-                            <input type="text" id="heroSubtitleInput" placeholder="Deskripsi singkat..." class="w-full px-4 py-3 border border-gray-200 rounded-xl">
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-500 mb-1 block">Emoji Dekorasi</label>
-                            <input type="text" id="heroEmojiInput" placeholder="🍇" class="w-full px-4 py-3 border border-gray-200 rounded-xl" maxlength="2">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Warna Dari</label>
-                                <input type="color" id="heroColorFrom" value="#22c55e" class="w-full h-10 rounded-xl cursor-pointer">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Warna Ke</label>
-                                <input type="color" id="heroColorTo" value="#16a34a" class="w-full h-10 rounded-xl cursor-pointer">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Promo Banner -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-bullhorn text-orange-500"></i> Banner Promo
-                        </h3>
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-500 mb-1 block">Judul Promo</label>
-                            <input type="text" id="promoTitleInput" placeholder="Buah Segar Setiap Hari!" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-xs text-gray-500 mb-1 block">Subtitle Promo</label>
-                            <input type="text" id="promoSubtitleInput" placeholder="Kualitas terbaik untuk keluarga Anda" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
-                        </div>
-                    </div>
-
-                    <button onclick="saveHeroSettings()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition mb-4">
-                        <i class="fas fa-save mr-2"></i> Simpan Hero Section
-                    </button>
-                </div>
-
-                <!-- Settings Tab -->
-                <div id="settingsTab" class="hidden">
-                    <!-- WA Number Setting -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fab fa-whatsapp text-green-500"></i> Nomor WhatsApp Toko
-                        </h3>
-                        <input type="text" id="waNumber" placeholder="628xxxxxxxxxx" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
-                        <button onclick="saveWANumber()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition">
-                            <i class="fas fa-save mr-2"></i>Simpan Nomor WA
-                        </button>
-                    </div>
-
-                    <!-- Change PIN -->
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-key text-purple-500"></i> Ubah PIN Admin
-                        </h3>
-                        <input type="password" id="newPin" placeholder="PIN Baru" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3" maxlength="6">
-                        <button onclick="changePin()" class="w-full bg-purple-500 text-white py-2 rounded-xl font-medium hover:bg-purple-600 transition">
-                            <i class="fas fa-save mr-2"></i>Ubah PIN
-                        </button>
+                        <div id="adminCustomersList" class="space-y-2 max-h-96 overflow-y-auto"></div>
                     </div>
                 </div>
 
                 <!-- Catalog Tab -->
                 <div id="catalogTab" class="hidden">
-                    <!-- Add Product Button -->
-                    <button onclick="showAddProductModal()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold mb-4 flex items-center justify-center gap-2 hover:bg-green-600 transition">
-                        <i class="fas fa-plus"></i> Tambah Produk Baru
-                    </button>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="showAddProductModal()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition">
+                            <i class="fas fa-plus"></i> Tambah Produk
+                        </button>
+                        <button onclick="forceUploadProducts()" class="bg-blue-500 text-white px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-600 transition" title="Upload Products ke Firebase">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </button>
+                    </div>
 
-                    <!-- Product List -->
                     <div class="bg-white rounded-2xl shadow-lg p-4">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-gray-800">
@@ -496,83 +394,178 @@
                     </div>
                 </div>
 
-                <!-- Firebase Tab -->
-                <div id="firebaseTab" class="hidden">
-                    <!-- Auto-connect Info -->
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-                        <div class="flex items-center gap-2 text-green-800">
-                            <i class="fas fa-check-circle text-green-600"></i>
-                            <span class="text-sm font-medium">Firebase sudah dikonfigurasi otomatis!</span>
+                <!-- Store Tab -->
+                <div id="storeTab" class="hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-image text-green-500"></i> Logo Toko
+                        </h3>
+                        <div class="flex items-center gap-4 mb-3">
+                            <div id="adminLogoPreview" class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                                <span class="text-4xl">🍊</span>
+                            </div>
+                            <div class="flex-1">
+                                <input type="url" id="storeLogo" placeholder="URL Logo (kosongkan untuk emoji)" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm mb-2">
+                                <input type="text" id="storeEmoji" placeholder="Emoji: 🍊" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" maxlength="2">
+                            </div>
                         </div>
-                        <p class="text-xs text-green-700 mt-1">Aplikasi akan langsung terhubung ke database saat diakses.</p>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
                         <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-database text-blue-500"></i> Konfigurasi Firebase
+                            <i class="fas fa-store text-blue-500"></i> Nama & Tagline
                         </h3>
-                        <p class="text-sm text-gray-600 mb-4">Konfigurasi Firebase saat ini (bisa diubah jika perlu).</p>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                                <input type="text" id="firebaseApiKey" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="AIzaSy...">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Auth Domain</label>
-                                <input type="text" id="firebaseAuthDomain" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="your-app.firebaseapp.com">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
-                                <input type="text" id="firebaseProjectId" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="your-project-id">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Storage Bucket</label>
-                                <input type="text" id="firebaseStorageBucket" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="your-app.appspot.com">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Messaging Sender ID</label>
-                                <input type="text" id="firebaseMessagingSenderId" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="123456789">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">App ID</label>
-                                <input type="text" id="firebaseAppId" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm" placeholder="1:123456789:web:abc123">
-                            </div>
-                        </div>
+                        <input type="text" id="storeName" placeholder="Nama Toko" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
+                        <input type="text" id="storeTagline" placeholder="Tagline Toko" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    </div>
 
-                        <button onclick="saveFirebaseConfig()" class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium hover:bg-blue-600 transition mt-4">
-                            <i class="fas fa-save mr-2"></i>Simpan & Hubungkan
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-orange-500"></i> Lokasi & Jam
+                        </h3>
+                        <textarea id="storeAddress" rows="2" placeholder="Alamat lengkap" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3 resize-none"></textarea>
+                        <input type="text" id="storeHours" placeholder="08:00 - 21:00 WIB" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-share-alt text-purple-500"></i> Sosial Media
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="text" id="socialInstagram" placeholder="Instagram" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="socialFacebook" placeholder="Facebook" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="socialTiktok" placeholder="TikTok" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="socialShopee" placeholder="Shopee" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="socialTokopedia" placeholder="Tokopedia" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="socialYoutube" placeholder="YouTube" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-credit-card text-blue-500"></i> Rekening Bank
+                        </h3>
+                        <div id="bankAccountsAdmin" class="space-y-3 mb-3"></div>
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <input type="text" id="newBankName" placeholder="Nama Bank" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="newBankNumber" placeholder="No. Rekening" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            <input type="text" id="newBankHolder" placeholder="Atas Nama" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                        </div>
+                        <button onclick="addBankAccount()" class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium text-sm hover:bg-blue-600 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Rekening
                         </button>
                     </div>
 
-                    <!-- Sync Actions -->
+                    <button onclick="saveStoreProfile()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition mb-4">
+                        <i class="fas fa-save mr-2"></i> Simpan Profil Toko
+                    </button>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settingsTab" class="hidden">
                     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
                         <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-sync text-green-500"></i> Sinkronisasi Data
+                            <i class="fab fa-whatsapp text-green-500"></i> Nomor WhatsApp Admin
                         </h3>
-                        <div class="space-y-2">
-                            <button onclick="uploadAllToFirebase()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition flex items-center justify-center gap-2">
-                                <i class="fas fa-cloud-upload-alt"></i> Upload Data ke Firebase
+                        <input type="text" id="waNumber" placeholder="628xxxxxxxxxx" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
+                        <button onclick="saveWANumber()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition">
+                            <i class="fas fa-save mr-2"></i>Simpan Nomor WA
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-key text-purple-500"></i> Ubah PIN Admin
+                        </h3>
+                        <input type="password" id="newPin" placeholder="PIN Baru (minimal 4 digit)" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3" maxlength="6">
+                        <button onclick="changePin()" class="w-full bg-purple-500 text-white py-2 rounded-xl font-medium hover:bg-purple-600 transition">
+                            <i class="fas fa-save mr-2"></i>Ubah PIN
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-sync text-blue-500"></i> Sinkronisasi Data
+                        </h3>
+                        <button onclick="uploadAllToFirebase()" class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium hover:bg-blue-600 transition mb-2">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i>Upload Semua ke Firebase
+                        </button>
+                        <button onclick="downloadFromFirebase()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition">
+                            <i class="fas fa-cloud-download-alt mr-2"></i>Download dari Firebase
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Report Tab -->
+                <div id="reportTab" class="hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-file-excel text-green-600"></i> Export Laporan Excel
+                        </h3>
+                        <p class="text-sm text-gray-500 mb-4">Download laporan dalam format Excel (.xlsx)</p>
+                        
+                        <div class="space-y-3">
+                            <button onclick="exportOrdersToExcel()" class="w-full bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-clipboard-list"></i> Export Laporan Pesanan
                             </button>
-                            <button onclick="downloadFromFirebase()" class="w-full bg-orange-500 text-white py-2 rounded-xl font-medium hover:bg-orange-600 transition flex items-center justify-center gap-2">
-                                <i class="fas fa-cloud-download-alt"></i> Download Data dari Firebase
+                            
+                            <button onclick="exportCustomersToExcel()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-users"></i> Export Data Customer
+                            </button>
+                            
+                            <button onclick="exportProductsToExcel()" class="w-full bg-orange-600 text-white py-3 rounded-xl font-medium hover:bg-orange-700 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-box"></i> Export Data Produk
+                            </button>
+                            
+                            <button onclick="exportAllToExcel()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-medium hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-file-archive"></i> Export Semua Data
                             </button>
                         </div>
                     </div>
 
-                    <!-- How to Setup -->
-                    <div class="bg-blue-50 rounded-2xl p-4">
-                        <h3 class="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                            <i class="fas fa-info-circle"></i> Cara Setup Firebase
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-filter text-blue-500"></i> Filter Laporan Pesanan
                         </h3>
-                        <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                            <li>Buka <a href="https://console.firebase.google.com" target="_blank" class="underline">Firebase Console</a></li>
-                            <li>Buat project baru</li>
-                            <li>Tambahkan Web App</li>
-                            <li>Copy konfigurasi ke form di atas</li>
-                            <li>Buat Firestore Database (test mode)</li>
-                            <li>Klik "Simpan & Hubungkan"</li>
-                        </ol>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Dari Tanggal</label>
+                                <input type="date" id="reportDateFrom" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Sampai Tanggal</label>
+                                <input type="date" id="reportDateTo" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Status Pesanan</label>
+                            <select id="reportStatus" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white">
+                                <option value="all">Semua Status</option>
+                                <option value="pending">Menunggu</option>
+                                <option value="confirmed">Dikonfirmasi</option>
+                                <option value="shipped">Dikirim</option>
+                                <option value="completed">Selesai</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="exportFilteredOrdersToExcel()" class="w-full bg-green-600 text-white py-2 rounded-xl font-medium hover:bg-green-700 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-download"></i> Download dengan Filter
+                        </button>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <h4 class="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-500"></i> Informasi
+                        </h4>
+                        <ul class="text-xs text-gray-500 space-y-1">
+                            <li>• File akan didownload dengan nama: <strong>varsha_[jenis]_[tanggal]_[waktu].xlsx</strong></li>
+                            <li>• Laporan pesanan berisi detail lengkap setiap order</li>
+                            <li>• Data customer berisi nama, nomor HP, dan alamat</li>
+                            <li>• Data produk berisi katalog lengkap dengan harga</li>
+                        </ul>
                     </div>
                 </div>
 
@@ -586,23 +579,56 @@
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div class="max-w-lg mx-auto flex justify-around py-2">
-            <button onclick="navigateTo('katalog')" class="nav-item flex flex-col items-center py-2 px-6 text-gray-400 transition">
+            <button onclick="navigateTo('katalog')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition">
                 <i class="fas fa-store text-xl mb-1"></i>
                 <span class="text-xs">Katalog</span>
             </button>
-            <button onclick="navigateTo('keranjang')" class="nav-item flex flex-col items-center py-2 px-6 text-gray-400 transition relative">
+            <button onclick="navigateTo('keranjang')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition relative">
                 <i class="fas fa-shopping-cart text-xl mb-1"></i>
                 <span id="cartBadge" class="badge hidden">0</span>
                 <span class="text-xs">Keranjang</span>
             </button>
-            <button onclick="navigateTo('admin')" class="nav-item flex flex-col items-center py-2 px-6 text-gray-400 transition">
+            <button onclick="navigateTo('pesanan')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition relative">
+                <i class="fas fa-clipboard-list text-xl mb-1"></i>
+                <span id="orderBadge" class="badge hidden">0</span>
+                <span class="text-xs">Pesanan</span>
+            </button>
+            <button onclick="navigateTo('admin')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition">
                 <i class="fas fa-cog text-xl mb-1"></i>
                 <span class="text-xs">Admin</span>
             </button>
         </div>
     </nav>
 
-    <!-- Product Detail Modal -->
+    <!-- Customer Login/Register Modal -->
+    <div id="customerModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Masuk / Daftar</h3>
+                <button onclick="closeCustomerModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-times text-gray-600"></i>
+                </button>
+            </div>
+            
+            <div id="loginForm">
+                <p class="text-gray-500 text-sm mb-4">Masukkan nomor HP yang terdaftar</p>
+                <input type="tel" id="loginPhone" placeholder="Nomor HP (08xxx)" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
+                <button onclick="loginCustomer()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">Masuk</button>
+                <p class="text-center text-sm text-gray-500 mt-4">Belum punya akun? <button onclick="showRegisterForm()" class="text-green-600 font-medium">Daftar</button></p>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <p class="text-gray-500 text-sm mb-4">Lengkapi data untuk mendaftar</p>
+                <input type="text" id="regName" placeholder="Nama Lengkap" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
+                <input type="tel" id="regPhone" placeholder="Nomor HP (08xxx)" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3">
+                <textarea id="regAddress" rows="2" placeholder="Alamat Lengkap" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3 resize-none"></textarea>
+                <button onclick="registerCustomer()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">Daftar</button>
+                <p class="text-center text-sm text-gray-500 mt-4">Sudah punya akun? <button onclick="showLoginForm()" class="text-green-600 font-medium">Masuk</button></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
     <div id="productModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-end justify-center">
         <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
             <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
@@ -610,7 +636,7 @@
         </div>
     </div>
 
-    <!-- Add/Edit Product Modal -->
+    <!-- Product Form Modal -->
     <div id="productFormModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -621,23 +647,20 @@
             </div>
             <form id="productForm" onsubmit="saveProduct(event)">
                 <input type="hidden" id="editProductId">
-                
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Produk *</label>
-                    <input type="text" id="productName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Contoh: Apel Fuji Premium">
+                    <input type="text" id="productName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                 </div>
-
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Harga (Rp) *</label>
-                        <input type="number" id="productPrice" required class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="45000">
+                        <input type="number" id="productPrice" required class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Satuan *</label>
-                        <input type="text" id="productUnit" required class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="kg, buah, ikat">
+                        <input type="text" id="productUnit" required placeholder="kg, ikat, buah" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                     </div>
                 </div>
-
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
                     <select id="productCategory" required class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
@@ -648,31 +671,35 @@
                         <option value="Lainnya">📦 Lainnya</option>
                     </select>
                 </div>
-
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">URL Gambar *</label>
-                    <input type="url" id="productImage" required class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="https://example.com/gambar.jpg">
-                    <p class="text-xs text-gray-500 mt-1">Gunakan link gambar dari Unsplash, ImgBB, atau hosting lain</p>
+                    <input type="url" id="productImage" required placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                 </div>
-
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi *</label>
-                    <textarea id="productDesc" required rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none" placeholder="Deskripsi singkat produk..."></textarea>
+                    <textarea id="productDesc" required rows="2" placeholder="Deskripsi singkat produk" class="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none"></textarea>
                 </div>
-
-                <!-- Image Preview -->
                 <div id="imagePreview" class="mb-4 hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Preview Gambar</label>
-                    <img id="previewImg" src="" alt="Preview" class="w-full h-40 object-cover rounded-xl border border-gray-200">
+                    <img id="previewImg" src="" alt="Preview" class="w-full h-32 object-cover rounded-xl">
                 </div>
-
                 <div class="flex gap-3">
-                    <button type="button" onclick="closeProductFormModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">Batal</button>
-                    <button type="submit" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
-                        <i class="fas fa-save mr-2"></i> Simpan
-                    </button>
+                    <button type="button" onclick="closeProductFormModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200">Batal</button>
+                    <button type="submit" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600">Simpan</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Detail Pesanan</h3>
+                <button onclick="closeOrderDetailModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-times text-gray-600"></i>
+                </button>
+            </div>
+            <div id="orderDetailContent"></div>
         </div>
     </div>
 
@@ -683,71 +710,21 @@
                 <i class="fas fa-trash text-red-500 text-2xl"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus Produk?</h3>
-            <p id="deleteProductName" class="text-gray-500 mb-6">Produk akan dihapus permanen</p>
+            <p id="deleteProductName" class="text-gray-500 mb-6"></p>
             <div class="flex gap-3">
-                <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">Batal</button>
-                <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">Hapus</button>
+                <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200">Batal</button>
+                <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600">Hapus</button>
             </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 hidden">
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg z-[60] hidden">
         <span id="toastMessage"></span>
     </div>
 
     <script>
-        // Default Product Data
-        const defaultProducts = [
-            { id: 1, name: "Apel Fuji Premium", price: 45000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import, manis dan renyah" },
-            { id: 2, name: "Jeruk Mandarin", price: 38000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji" },
-            { id: 3, name: "Mangga Harum Manis", price: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga harum manis lokal pilihan" },
-            { id: 4, name: "Anggur Red Globe", price: 75000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah import segar" },
-            { id: 5, name: "Pisang Cavendish", price: 28000, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang cavendish premium" },
-            { id: 6, name: "Semangka Merah", price: 25000, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah manis tanpa biji" },
-            { id: 7, name: "Bayam Organik", price: 8000, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam organik segar dari kebun" },
-            { id: 8, name: "Brokoli Segar", price: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar berkualitas" },
-            { id: 9, name: "Wortel Import", price: 15000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel import manis dan renyah" },
-            { id: 10, name: "Tomat Cherry", price: 22000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry segar untuk salad" },
-            { id: 11, name: "Cabai Merah Keriting", price: 45000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas" },
-            { id: 12, name: "Bawang Merah", price: 35000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan" },
-            { id: 13, name: "Bawang Putih", price: 40000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import berkualitas" },
-            { id: 14, name: "Jahe Emprit", price: 30000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe emprit segar untuk masakan" },
-            { id: 15, name: "Madu Murni", price: 85000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml" },
-            { id: 16, name: "Telur Ayam Kampung", price: 48000, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik (30 butir)" }
-        ];
-
-        // Default Store Profile
-        const defaultStoreProfile = {
-            logo: '',
-            emoji: '🍊',
-            name: 'Varsha',
-            tagline: 'Fruits & Goods',
-            address: 'Jakarta, Indonesia',
-            hours: '08:00 - 21:00 WIB',
-            social: {
-                instagram: '',
-                facebook: '',
-                tiktok: '',
-                shopee: '',
-                tokopedia: '',
-                youtube: ''
-            },
-            banks: []
-        };
-
-        // Default Hero Settings
-        const defaultHeroSettings = {
-            title: 'Selamat Datang! 👋',
-            subtitle: 'Buah segar & berkualitas langsung dari kebun ke rumah Anda',
-            emoji: '🍇',
-            colorFrom: '#22c55e',
-            colorTo: '#16a34a',
-            promoTitle: 'Buah Segar Setiap Hari!',
-            promoSubtitle: 'Kualitas terbaik untuk keluarga Anda'
-        };
-
-        // Default Firebase Configuration (Auto-connect)
+        // Firebase Configuration
         const defaultFirebaseConfig = {
             apiKey: "AIzaSyAyjpmryzBQfuTM8wT4eC0Ybm0VALM8_Uw",
             authDomain: "varsha-catalog.firebaseapp.com",
@@ -757,280 +734,418 @@
             appId: "1:136877159588:web:cc881aae2da44c5cce6231"
         };
 
-        // State
-        let products = [];
-        let cart = JSON.parse(localStorage.getItem('varshaCart')) || [];
-        let settings = JSON.parse(localStorage.getItem('varshaSettings')) || {
-            waNumber: '6281234567890',
-            pin: '290707'
+        // Default Products
+        const defaultProducts = [
+            { id: 1, name: "Apel Fuji Premium", price: 45000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import dari Jepang" },
+            { id: 2, name: "Jeruk Mandarin", price: 38000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji" },
+            { id: 3, name: "Mangga Harum Manis", price: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga lokal pilihan super manis" },
+            { id: 4, name: "Anggur Red Globe", price: 75000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah segar dan manis" },
+            { id: 5, name: "Pisang Cavendish", price: 28000, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang premium kualitas ekspor" },
+            { id: 6, name: "Semangka Merah", price: 25000, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah tanpa biji" },
+            { id: 7, name: "Bayam Organik", price: 8000, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam segar organik bebas pestisida" },
+            { id: 8, name: "Brokoli Segar", price: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar dan renyah" },
+            { id: 9, name: "Wortel Import", price: 15000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel manis import Australia" },
+            { id: 10, name: "Tomat Cherry", price: 22000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry manis untuk salad" },
+            { id: 11, name: "Cabai Merah Keriting", price: 45000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas segar" },
+            { id: 12, name: "Bawang Merah", price: 35000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan" },
+            { id: 13, name: "Bawang Putih", price: 40000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import kualitas super" },
+            { id: 14, name: "Jahe Emprit", price: 30000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe emprit segar untuk jamu" },
+            { id: 15, name: "Madu Murni", price: 85000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml" },
+            { id: 16, name: "Telur Kampung", price: 48000, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik 30 butir" }
+        ];
+
+        const defaultStoreProfile = {
+            logo: '', emoji: '🍊', name: 'Varsha', tagline: 'Fruits & Goods',
+            address: 'Jakarta, Indonesia', hours: '08:00 - 21:00 WIB',
+            social: { instagram: '', facebook: '', tiktok: '', shopee: '', tokopedia: '', youtube: '' },
+            banks: []
         };
+
+        // State Variables
+        let products = [];
+        let customers = [];
+        let orders = [];
+        let currentCustomer = JSON.parse(localStorage.getItem('varshaCurrentCustomer')) || null;
+        const _0x = atob('MjkwNzA3');
+        let settings = JSON.parse(localStorage.getItem('varshaSettings')) || { waNumber: '6281234567890', pin: _0x };
         let storeProfile = JSON.parse(localStorage.getItem('varshaStoreProfile')) || { ...defaultStoreProfile };
-        let heroSettings = JSON.parse(localStorage.getItem('varshaHeroSettings')) || { ...defaultHeroSettings };
         let firebaseConfig = JSON.parse(localStorage.getItem('varshaFirebaseConfig')) || defaultFirebaseConfig;
         let isAdminLoggedIn = false;
         let currentCategory = 'all';
+        let currentOrderFilter = 'all';
         let deleteProductId = null;
         let db = null;
         let isFirebaseConnected = false;
 
-        // Initialize Firebase
-        function initFirebase() {
-            // Use default config if no custom config exists
-            const config = firebaseConfig || defaultFirebaseConfig;
-            
-            if (config && config.apiKey) {
-                try {
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(config);
-                    }
-                    db = firebase.firestore();
-                    loadFromFirebase();
-                    return true;
-                } catch (error) {
-                    console.error('Firebase init error:', error);
-                    updateSyncStatus('error', 'Koneksi Gagal');
-                    return false;
-                }
-            }
-            return false;
+        // Get cart for current customer
+        function getCart() {
+            if (!currentCustomer) return [];
+            const allCarts = JSON.parse(localStorage.getItem('varshaCarts')) || {};
+            return allCarts[currentCustomer.phone] || [];
         }
 
-        // Load data from Firebase
-        async function loadFromFirebase() {
-            if (!db) {
-                loadFromLocalStorage();
-                return;
-            }
+        function saveCart(cart) {
+            if (!currentCustomer) return;
+            const allCarts = JSON.parse(localStorage.getItem('varshaCarts')) || {};
+            allCarts[currentCustomer.phone] = cart;
+            localStorage.setItem('varshaCarts', JSON.stringify(allCarts));
+        }
 
+        // Initialize Firebase
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                loadFromFirebase();
+                return true;
+            } catch (e) {
+                console.error('Firebase error:', e);
+                updateSyncStatus('error', 'Gagal');
+                return false;
+            }
+        }
+
+        async function loadFromFirebase() {
+            if (!db) { loadFromLocalStorage(); return; }
             try {
                 updateSyncStatus('syncing', 'Sinkronisasi...');
-
+                
                 // Load products
-                const productsSnapshot = await db.collection('products').get();
-                if (!productsSnapshot.empty) {
+                const productsSnap = await db.collection('products').get();
+                if (!productsSnap.empty) {
                     products = [];
-                    productsSnapshot.forEach(doc => {
-                        products.push({ id: doc.id, ...doc.data() });
-                    });
-                    products.sort((a, b) => {
-                        const idA = typeof a.id === 'string' ? parseInt(a.id) : a.id;
-                        const idB = typeof b.id === 'string' ? parseInt(b.id) : b.id;
-                        return idA - idB;
-                    });
+                    productsSnap.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                    products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
                 } else {
                     products = [...defaultProducts];
                 }
 
                 // Load settings
                 const settingsDoc = await db.collection('settings').doc('store').get();
-                if (settingsDoc.exists) {
-                    settings = { ...settings, ...settingsDoc.data() };
-                    localStorage.setItem('varshaSettings', JSON.stringify(settings));
-                }
+                if (settingsDoc.exists) settings = { ...settings, ...settingsDoc.data() };
 
-                // Load store profile
+                // Load profile
                 const profileDoc = await db.collection('settings').doc('profile').get();
-                if (profileDoc.exists) {
-                    storeProfile = { ...defaultStoreProfile, ...profileDoc.data() };
-                    localStorage.setItem('varshaStoreProfile', JSON.stringify(storeProfile));
-                }
+                if (profileDoc.exists) storeProfile = { ...defaultStoreProfile, ...profileDoc.data() };
 
-                // Load hero settings
-                const heroDoc = await db.collection('settings').doc('hero').get();
-                if (heroDoc.exists) {
-                    heroSettings = { ...defaultHeroSettings, ...heroDoc.data() };
-                    localStorage.setItem('varshaHeroSettings', JSON.stringify(heroSettings));
-                }
+                // Load customers
+                const customersSnap = await db.collection('customers').get();
+                customers = [];
+                customersSnap.forEach(doc => customers.push({ id: doc.id, ...doc.data() }));
+
+                // Load orders
+                const ordersSnap = await db.collection('orders').orderBy('createdAt', 'desc').get();
+                orders = [];
+                ordersSnap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
 
                 isFirebaseConnected = true;
                 updateSyncStatus('connected', 'Terhubung');
                 updateFirebaseStatusUI(true);
-                setupRealtimeListener();
-
-            } catch (error) {
-                console.error('Error loading from Firebase:', error);
+                
+                // Auto upload default products if empty
+                if (productsSnap.empty) {
+                    console.log('Products empty, uploading defaults...');
+                    await uploadDefaultProducts();
+                }
+                
+                setupRealtimeListeners();
+            } catch (e) {
+                console.error('Load error:', e);
                 updateSyncStatus('error', 'Error');
                 loadFromLocalStorage();
             }
-
             renderAll();
         }
 
-        // Setup realtime listener
-        function setupRealtimeListener() {
+        function setupRealtimeListeners() {
             if (!db) return;
-
-            db.collection('products').onSnapshot((snapshot) => {
+            
+            // Products listener
+            db.collection('products').onSnapshot(snap => {
                 products = [];
-                snapshot.forEach(doc => {
-                    products.push({ id: doc.id, ...doc.data() });
-                });
-                products.sort((a, b) => {
-                    const idA = typeof a.id === 'string' ? parseInt(a.id) : a.id;
-                    const idB = typeof b.id === 'string' ? parseInt(b.id) : b.id;
-                    return idA - idB;
-                });
-                renderAll();
-                updateSyncStatus('connected', 'Terhubung');
-            }, (error) => {
-                console.error('Realtime listener error:', error);
-                updateSyncStatus('error', 'Error');
+                snap.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                products.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                renderProducts();
+                renderFeaturedProducts();
+                if (isAdminLoggedIn) renderAdminProductList();
             });
 
-            db.collection('settings').doc('store').onSnapshot((doc) => {
-                if (doc.exists) {
-                    settings = { ...settings, ...doc.data() };
-                    localStorage.setItem('varshaSettings', JSON.stringify(settings));
-                    updateDisplayWA();
-                    if (document.getElementById('waNumber')) {
-                        document.getElementById('waNumber').value = settings.waNumber;
+            // Orders listener
+            db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                // Clear and rebuild orders array to prevent duplicates
+                const newOrders = [];
+                const seenIds = new Set();
+                snap.forEach(doc => {
+                    if (!seenIds.has(doc.id)) {
+                        seenIds.add(doc.id);
+                        newOrders.push({ id: doc.id, ...doc.data() });
                     }
+                });
+                orders = newOrders;
+                console.log('Orders updated from Firebase:', orders.length);
+                
+                // Update customer orders if customer is logged in
+                if (currentCustomer) {
+                    renderCustomerOrders();
+                    updateOrderBadge();
                 }
+                // Update admin orders if admin is logged in
+                if (isAdminLoggedIn) {
+                    renderAdminOrders();
+                }
+            }, error => {
+                console.error('Orders listener error:', error);
             });
 
-            db.collection('settings').doc('profile').onSnapshot((doc) => {
-                if (doc.exists) {
-                    storeProfile = { ...defaultStoreProfile, ...doc.data() };
-                    localStorage.setItem('varshaStoreProfile', JSON.stringify(storeProfile));
-                    applyStoreProfile();
-                }
-            });
-
-            db.collection('settings').doc('hero').onSnapshot((doc) => {
-                if (doc.exists) {
-                    heroSettings = { ...defaultHeroSettings, ...doc.data() };
-                    localStorage.setItem('varshaHeroSettings', JSON.stringify(heroSettings));
-                    applyHeroSettings();
-                }
+            // Customers listener
+            db.collection('customers').onSnapshot(snap => {
+                customers = [];
+                snap.forEach(doc => customers.push({ id: doc.id, ...doc.data() }));
+                if (isAdminLoggedIn) renderAdminCustomers();
             });
         }
 
-        // Load from localStorage (fallback)
         function loadFromLocalStorage() {
             products = JSON.parse(localStorage.getItem('varshaProducts')) || [...defaultProducts];
-            updateSyncStatus('offline', 'Offline (Local)');
+            updateSyncStatus('offline', 'Offline');
             updateFirebaseStatusUI(false);
             renderAll();
         }
 
-        // Save products to Firebase
-        async function saveProductToFirebase(product) {
-            if (!db || !isFirebaseConnected) {
-                saveToLocalStorage();
+        async function saveToFirebase(collection, docId, data) {
+            if (!db || !isFirebaseConnected) return;
+            try {
+                await db.collection(collection).doc(docId).set(data, { merge: true });
+            } catch (e) {
+                console.error('Save error:', e);
+            }
+        }
+
+        // Upload default products to Firebase
+        async function uploadDefaultProducts() {
+            if (!db) return;
+            try {
+                console.log('Uploading', defaultProducts.length, 'default products to Firebase...');
+                for (const p of defaultProducts) {
+                    await db.collection('products').doc(p.id.toString()).set({
+                        name: p.name,
+                        price: p.price,
+                        unit: p.unit,
+                        category: p.category,
+                        image: p.image,
+                        desc: p.desc
+                    });
+                }
+                console.log('Default products uploaded successfully!');
+                products = [...defaultProducts];
+            } catch (e) {
+                console.error('Upload default products error:', e);
+            }
+        }
+
+        // Force upload current products to Firebase
+        async function forceUploadProducts() {
+            if (!db) {
+                showToast('Firebase belum terhubung!');
                 return;
             }
-
             try {
-                updateSyncStatus('syncing', 'Menyimpan...');
-                const productId = product.id.toString();
-                await db.collection('products').doc(productId).set({
-                    name: product.name,
-                    price: product.price,
-                    unit: product.unit,
-                    category: product.category,
-                    image: product.image,
-                    desc: product.desc
-                });
-                updateSyncStatus('connected', 'Terhubung');
-            } catch (error) {
-                console.error('Error saving to Firebase:', error);
-                showToast('Gagal menyimpan ke cloud, tersimpan lokal');
-                saveToLocalStorage();
+                showToast('Mengupload products...');
+                const productsToUpload = products.length > 0 ? products : defaultProducts;
+                console.log('Force uploading', productsToUpload.length, 'products...');
+                
+                for (const p of productsToUpload) {
+                    await db.collection('products').doc(p.id.toString()).set({
+                        name: p.name,
+                        price: p.price,
+                        unit: p.unit,
+                        category: p.category,
+                        image: p.image,
+                        desc: p.desc
+                    });
+                }
+                
+                showToast('Products berhasil diupload! ✓');
+                console.log('Force upload completed!');
+            } catch (e) {
+                console.error('Force upload error:', e);
+                showToast('Gagal upload: ' + e.message);
             }
         }
 
-        // Delete product from Firebase
-        async function deleteProductFromFirebase(productId) {
+        async function deleteFromFirebase(collection, docId) {
             if (!db || !isFirebaseConnected) return;
             try {
-                await db.collection('products').doc(productId.toString()).delete();
-            } catch (error) {
-                console.error('Error deleting from Firebase:', error);
+                await db.collection(collection).doc(docId).delete();
+            } catch (e) {
+                console.error('Delete error:', e);
             }
         }
 
-        // Save settings to Firebase
-        async function saveSettingsToFirebase() {
-            if (!db || !isFirebaseConnected) return;
-            try {
-                await db.collection('settings').doc('store').set({
-                    waNumber: settings.waNumber,
-                    pin: settings.pin
-                });
-            } catch (error) {
-                console.error('Error saving settings to Firebase:', error);
-            }
-        }
-
-        // Save store profile to Firebase
-        async function saveStoreProfileToFirebase() {
-            if (!db || !isFirebaseConnected) return;
-            try {
-                await db.collection('settings').doc('profile').set(storeProfile);
-            } catch (error) {
-                console.error('Error saving profile to Firebase:', error);
-            }
-        }
-
-        // Save hero settings to Firebase
-        async function saveHeroSettingsToFirebase() {
-            if (!db || !isFirebaseConnected) return;
-            try {
-                await db.collection('settings').doc('hero').set(heroSettings);
-            } catch (error) {
-                console.error('Error saving hero to Firebase:', error);
-            }
-        }
-
-        // Save to localStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('varshaProducts', JSON.stringify(products));
-        }
-
-        // Update sync status indicator
         function updateSyncStatus(status, text) {
-            const syncEl = document.getElementById('syncStatus');
-            let dotColor = 'bg-yellow-300';
-            
-            switch(status) {
-                case 'connected': dotColor = 'bg-green-400'; break;
-                case 'syncing': dotColor = 'bg-blue-400'; break;
-                case 'error': dotColor = 'bg-red-400'; break;
-                case 'offline': dotColor = 'bg-gray-400'; break;
-            }
-
-            syncEl.innerHTML = `
-                <span class="w-2 h-2 ${dotColor} rounded-full ${status === 'syncing' ? 'pulse-dot' : ''}"></span>
-                <span class="opacity-75">${text}</span>
-            `;
+            const el = document.getElementById('syncStatus');
+            const colors = { connected: 'bg-green-400', syncing: 'bg-blue-400', error: 'bg-red-400', offline: 'bg-gray-400' };
+            el.innerHTML = `<span class="w-2 h-2 ${colors[status] || 'bg-yellow-300'} rounded-full ${status === 'syncing' ? 'pulse-dot' : ''}"></span><span class="opacity-75">${text}</span>`;
         }
 
-        // Update Firebase status in UI
         function updateFirebaseStatusUI(connected) {
             const icon = document.getElementById('firebaseStatusIcon');
             const text = document.getElementById('firebaseStatusText');
-            const adminStatus = document.getElementById('adminFirebaseStatus');
-
+            const admin = document.getElementById('adminFirebaseStatus');
             if (connected) {
                 icon.className = 'w-10 h-10 bg-green-100 rounded-full flex items-center justify-center';
                 icon.innerHTML = '<i class="fas fa-cloud text-green-600"></i>';
                 text.textContent = 'Terhubung ke Firebase';
                 text.className = 'font-semibold text-green-600';
-                adminStatus.className = 'bg-green-50 border border-green-200 rounded-xl p-3 mb-4 flex items-center gap-3';
-                adminStatus.innerHTML = '<i class="fas fa-cloud text-green-600"></i><span class="text-sm text-green-800">Terhubung ke Firebase - Data tersinkronisasi</span>';
+                admin.className = 'bg-green-50 border border-green-200 rounded-xl p-3 mb-4 flex items-center gap-3';
+                admin.innerHTML = '<i class="fas fa-cloud text-green-600"></i><span class="text-sm text-green-800">Terhubung - Data tersinkronisasi</span>';
             } else {
                 icon.className = 'w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center';
                 icon.innerHTML = '<i class="fas fa-cloud text-yellow-600"></i>';
-                text.textContent = 'Mode Offline (localStorage)';
+                text.textContent = 'Mode Offline';
                 text.className = 'font-semibold text-yellow-600';
-                adminStatus.className = 'bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 flex items-center gap-3';
-                adminStatus.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-600"></i><span class="text-sm text-yellow-800">Mode Offline - Setup Firebase untuk sinkronisasi cloud</span>';
+                admin.className = 'bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 flex items-center gap-3';
+                admin.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-600"></i><span class="text-sm text-yellow-800">Mode Offline</span>';
             }
         }
 
-        // Apply Store Profile to UI
+        // Customer Functions
+        function showCustomerModal() {
+            document.getElementById('customerModal').classList.remove('hidden');
+            showLoginForm();
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.add('hidden');
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        async function loginCustomer() {
+            const phone = document.getElementById('loginPhone').value.trim().replace(/\D/g, '');
+            if (phone.length < 10) {
+                showToast('Nomor HP tidak valid!');
+                return;
+            }
+
+            const customer = customers.find(c => c.phone === phone);
+            if (customer) {
+                currentCustomer = customer;
+                localStorage.setItem('varshaCurrentCustomer', JSON.stringify(customer));
+                closeCustomerModal();
+                updateCustomerBar();
+                renderCart();
+                renderCustomerOrders();
+                showToast(`Selamat datang, ${customer.name}! 👋`);
+            } else {
+                showToast('Nomor HP belum terdaftar!');
+            }
+        }
+
+        async function registerCustomer() {
+            const name = document.getElementById('regName').value.trim();
+            const phone = document.getElementById('regPhone').value.trim().replace(/\D/g, '');
+            const address = document.getElementById('regAddress').value.trim();
+
+            if (!name || phone.length < 10 || !address) {
+                showToast('Lengkapi semua data!');
+                return;
+            }
+
+            // Check if phone already exists
+            if (customers.find(c => c.phone === phone)) {
+                showToast('Nomor HP sudah terdaftar!');
+                return;
+            }
+
+            const newCustomer = {
+                name,
+                phone,
+                address,
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to Firebase
+            await saveToFirebase('customers', phone, newCustomer);
+            customers.push({ id: phone, ...newCustomer });
+
+            currentCustomer = { id: phone, ...newCustomer };
+            localStorage.setItem('varshaCurrentCustomer', JSON.stringify(currentCustomer));
+
+            closeCustomerModal();
+            updateCustomerBar();
+            showToast(`Pendaftaran berhasil! Selamat datang, ${name}! 🎉`);
+        }
+
+        function logoutCustomer() {
+            currentCustomer = null;
+            localStorage.removeItem('varshaCurrentCustomer');
+            updateCustomerBar();
+            renderCart();
+            renderCustomerOrders();
+            showToast('Berhasil keluar');
+        }
+
+        function updateCustomerBar() {
+            const info = document.getElementById('customerInfo');
+            const btn = document.getElementById('customerBtn');
+
+            if (currentCustomer) {
+                info.innerHTML = `
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-green-600 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">${currentCustomer.name}</p>
+                        <p class="text-xs text-gray-500">${currentCustomer.phone}</p>
+                    </div>
+                `;
+                btn.textContent = 'Keluar';
+                btn.onclick = logoutCustomer;
+                btn.className = 'text-sm bg-gray-500 text-white px-4 py-1.5 rounded-full font-medium hover:bg-gray-600 transition';
+            } else {
+                info.innerHTML = `
+                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-gray-400 text-sm"></i>
+                    </div>
+                    <span class="text-sm text-gray-500">Belum login</span>
+                `;
+                btn.textContent = 'Masuk / Daftar';
+                btn.onclick = showCustomerModal;
+                btn.className = 'text-sm bg-green-500 text-white px-4 py-1.5 rounded-full font-medium hover:bg-green-600 transition';
+            }
+        }
+
+        // Render Functions
+        function renderAll() {
+            renderFeaturedProducts();
+            renderProducts();
+            updateCartBadge();
+            updateOrderBadge();
+            updateDisplayWA();
+            applyStoreProfile();
+            updateCustomerBar();
+            renderCart();
+            renderCustomerOrders();
+            if (isAdminLoggedIn) {
+                renderAdminProductList();
+                renderAdminOrders();
+                renderAdminCustomers();
+                loadStoreProfileToForm();
+            }
+        }
+
         function applyStoreProfile() {
-            // Header
             const headerLogo = document.getElementById('headerLogo');
             const headerLogoEmoji = document.getElementById('headerLogoEmoji');
             if (storeProfile.logo) {
@@ -1045,7 +1160,6 @@
             document.getElementById('headerStoreName').textContent = storeProfile.name || 'Varsha';
             document.getElementById('headerTagline').textContent = storeProfile.tagline || 'Fruits & Goods';
 
-            // Profile Page
             const profileLogo = document.getElementById('profileLogo');
             const profileLogoEmoji = document.getElementById('profileLogoEmoji');
             if (storeProfile.logo) {
@@ -1057,25 +1171,20 @@
                 profileLogoEmoji.classList.remove('hidden');
                 profileLogoEmoji.textContent = storeProfile.emoji || '🍊';
             }
-            document.getElementById('profileStoreName').textContent = storeProfile.name ? `${storeProfile.name} ${storeProfile.tagline || ''}` : 'Varsha Fruits & Goods';
+            document.getElementById('profileStoreName').textContent = `${storeProfile.name || 'Varsha'} ${storeProfile.tagline || ''}`;
             document.getElementById('profileTagline').textContent = storeProfile.tagline || 'Buah Segar & Berkualitas';
             document.getElementById('displayAddress').textContent = storeProfile.address || '-';
             document.getElementById('displayHours').textContent = storeProfile.hours || '08:00 - 21:00 WIB';
 
-            // Social Media
             renderSocialMedia();
-
-            // Bank Accounts
             renderBankAccounts();
         }
 
-        // Render Social Media Links
         function renderSocialMedia() {
             const container = document.getElementById('socialMediaLinks');
             const social = storeProfile.social || {};
             let html = '';
-
-            const socialConfig = {
+            const config = {
                 instagram: { icon: 'fab fa-instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500', url: 'https://instagram.com/' },
                 facebook: { icon: 'fab fa-facebook-f', color: 'bg-blue-600', url: 'https://facebook.com/' },
                 tiktok: { icon: 'fab fa-tiktok', color: 'bg-black', url: 'https://tiktok.com/@' },
@@ -1083,36 +1192,19 @@
                 tokopedia: { icon: 'fas fa-store', color: 'bg-green-500', url: 'https://tokopedia.com/' },
                 youtube: { icon: 'fab fa-youtube', color: 'bg-red-600', url: 'https://youtube.com/@' }
             };
-
             for (const [key, value] of Object.entries(social)) {
-                if (value && socialConfig[key]) {
-                    html += `
-                        <a href="${socialConfig[key].url}${value}" target="_blank" class="social-icon w-10 h-10 ${socialConfig[key].color} text-white rounded-full flex items-center justify-center">
-                            <i class="${socialConfig[key].icon}"></i>
-                        </a>
-                    `;
+                if (value && config[key]) {
+                    html += `<a href="${config[key].url}${value}" target="_blank" class="social-icon w-10 h-10 ${config[key].color} text-white rounded-full flex items-center justify-center"><i class="${config[key].icon}"></i></a>`;
                 }
             }
-
-            if (!html) {
-                document.getElementById('socialMediaSection').classList.add('hidden');
-            } else {
-                document.getElementById('socialMediaSection').classList.remove('hidden');
-                container.innerHTML = html;
-            }
+            document.getElementById('socialMediaSection').classList.toggle('hidden', !html);
+            container.innerHTML = html || '<p class="text-gray-500 text-sm">Belum ada sosial media</p>';
         }
 
-        // Render Bank Accounts
         function renderBankAccounts() {
             const container = document.getElementById('bankAccounts');
             const banks = storeProfile.banks || [];
-
-            if (banks.length === 0) {
-                document.getElementById('bankSection').classList.add('hidden');
-                return;
-            }
-
-            document.getElementById('bankSection').classList.remove('hidden');
+            document.getElementById('bankSection').classList.toggle('hidden', banks.length === 0);
             container.innerHTML = banks.map(bank => `
                 <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -1122,82 +1214,820 @@
                         <p class="font-semibold text-gray-800">${bank.name}</p>
                         <p class="text-sm text-gray-600">${bank.number} - ${bank.holder}</p>
                     </div>
-                    <button onclick="copyToClipboard('${bank.number}')" class="text-blue-500 hover:text-blue-600">
-                        <i class="fas fa-copy"></i>
-                    </button>
+                    <button onclick="copyToClipboard('${bank.number}')" class="text-blue-500 hover:text-blue-700"><i class="fas fa-copy"></i></button>
                 </div>
             `).join('');
         }
 
-        // Render Bank Accounts in Admin
-        function renderBankAccountsAdmin() {
-            const container = document.getElementById('bankAccountsAdmin');
-            const banks = storeProfile.banks || [];
+        function renderFeaturedProducts() {
+            document.getElementById('featuredProducts').innerHTML = products.slice(0, 4).map(p => createProductCard(p)).join('');
+        }
 
-            if (banks.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-2">Belum ada rekening</p>';
+        function renderProducts(list = null) {
+            const container = document.getElementById('productGrid');
+            let filtered = list || products;
+            if (!list && currentCategory !== 'all') filtered = products.filter(p => p.category === currentCategory);
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="col-span-2 text-center py-12"><span class="text-5xl">📦</span><p class="text-gray-500 mt-3">Tidak ada produk</p></div>';
+                return;
+            }
+            container.innerHTML = filtered.map(p => createProductCard(p)).join('');
+        }
+
+        function createProductCard(product) {
+            return `
+                <div class="product-card bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer" onclick="showProductDetail('${product.id}')">
+                    <div class="relative">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+                        <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">${product.category}</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm text-gray-800 truncate">${product.name}</h3>
+                        <p class="text-xs text-gray-500">per ${product.unit}</p>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
+                            <button onclick="event.stopPropagation(); addToCart('${product.id}')" class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition"><i class="fas fa-plus text-sm"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showProductDetail(id) {
+            const product = products.find(p => p.id.toString() === id.toString());
+            if (!product) return;
+            document.getElementById('modalContent').innerHTML = `
+                <img src="${product.image}" alt="${product.name}" class="w-full h-56 object-cover rounded-2xl mb-4">
+                <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">${product.category}</span>
+                <h2 class="text-xl font-bold text-gray-800 mt-2">${product.name}</h2>
+                <p class="text-gray-500 text-sm mt-1">${product.desc}</p>
+                <div class="flex items-baseline gap-2 mt-3">
+                    <span class="text-2xl font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
+                    <span class="text-gray-500 text-sm">/ ${product.unit}</span>
+                </div>
+                <button onclick="addToCart('${product.id}'); closeModal()" class="w-full mt-6 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
+                    <i class="fas fa-cart-plus mr-2"></i> Tambah ke Keranjang
+                </button>
+            `;
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        // Cart Functions
+        function addToCart(id) {
+            if (!currentCustomer) {
+                showToast('Silakan login terlebih dahulu!');
+                showCustomerModal();
                 return;
             }
 
-            container.innerHTML = banks.map((bank, index) => `
-                <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                    <div class="flex-1 text-sm">
-                        <span class="font-medium">${bank.name}</span> - ${bank.number} (${bank.holder})
+            let cart = getCart();
+            const existing = cart.find(item => item.id.toString() === id.toString());
+            if (existing) existing.qty++;
+            else cart.push({ id: id.toString(), qty: 1 });
+            saveCart(cart);
+            updateCartBadge();
+            showToast('Ditambahkan ke keranjang! 🛒');
+        }
+
+        function removeFromCart(id) {
+            let cart = getCart();
+            cart = cart.filter(item => item.id.toString() !== id.toString());
+            saveCart(cart);
+            updateCartBadge();
+            renderCart();
+        }
+
+        function updateQty(id, delta) {
+            let cart = getCart();
+            const item = cart.find(item => item.id.toString() === id.toString());
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) { removeFromCart(id); return; }
+            }
+            saveCart(cart);
+            renderCart();
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
+            const cart = getCart();
+            const total = cart.reduce((sum, item) => sum + item.qty, 0);
+            badge.textContent = total;
+            badge.classList.toggle('hidden', total === 0);
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const empty = document.getElementById('cartEmpty');
+            const summary = document.getElementById('cartSummary');
+            
+            if (!currentCustomer) {
+                container.innerHTML = '';
+                empty.innerHTML = `
+                    <span class="text-6xl">🔐</span>
+                    <p class="text-gray-500 mt-4">Silakan login untuk melihat keranjang</p>
+                    <button onclick="showCustomerModal()" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Masuk / Daftar</button>
+                `;
+                empty.classList.remove('hidden');
+                summary.classList.add('hidden');
+                return;
+            }
+
+            let cart = getCart();
+            cart = cart.filter(item => products.find(p => p.id.toString() === item.id.toString()));
+            saveCart(cart);
+            
+            if (cart.length === 0) {
+                container.innerHTML = '';
+                empty.innerHTML = `
+                    <span class="text-6xl">🛒</span>
+                    <p class="text-gray-500 mt-4">Keranjang masih kosong</p>
+                    <button onclick="navigateTo('katalog')" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Mulai Belanja</button>
+                `;
+                empty.classList.remove('hidden');
+                summary.classList.add('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            summary.classList.remove('hidden');
+            
+            container.innerHTML = cart.map(item => {
+                const product = products.find(p => p.id.toString() === item.id.toString());
+                if (!product) return '';
+                return `
+                    <div class="bg-white rounded-xl shadow-md p-3 mb-3 flex gap-3">
+                        <img src="${product.image}" class="w-20 h-20 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 text-sm">${product.name}</h4>
+                            <p class="text-green-600 font-bold text-sm">Rp ${product.price.toLocaleString('id-ID')}/${product.unit}</p>
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateQty('${item.id}', -1)" class="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"><i class="fas fa-minus text-xs"></i></button>
+                                    <span class="font-semibold w-6 text-center">${item.qty}</span>
+                                    <button onclick="updateQty('${item.id}', 1)" class="w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600"><i class="fas fa-plus text-xs"></i></button>
+                                </div>
+                                <button onclick="removeFromCart('${item.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="removeBankAccount(${index})" class="text-red-500 hover:text-red-600">
-                        <i class="fas fa-times"></i>
+                `;
+            }).join('');
+            
+            updateCartTotal();
+        }
+
+        function updateCartTotal() {
+            const cart = getCart();
+            const total = cart.reduce((sum, item) => {
+                const product = products.find(p => p.id.toString() === item.id.toString());
+                return sum + (product ? product.price * item.qty : 0);
+            }, 0);
+            document.getElementById('totalPrice').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        // Order Functions
+        async function sendOrder() {
+            if (!currentCustomer) {
+                showToast('Silakan login terlebih dahulu!');
+                showCustomerModal();
+                return;
+            }
+
+            const cart = getCart();
+            if (cart.length === 0) {
+                showToast('Keranjang masih kosong!');
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => {
+                const product = products.find(p => p.id.toString() === item.id.toString());
+                return sum + (product ? product.price * item.qty : 0);
+            }, 0);
+
+            const orderId = 'ORD' + Date.now();
+            const orderData = {
+                customerId: currentCustomer.phone,
+                customerName: currentCustomer.name,
+                customerPhone: currentCustomer.phone,
+                customerAddress: currentCustomer.address,
+                items: cart.map(item => {
+                    const product = products.find(p => p.id.toString() === item.id.toString());
+                    return {
+                        productId: item.id,
+                        name: product?.name || 'Unknown',
+                        price: product?.price || 0,
+                        unit: product?.unit || '',
+                        qty: item.qty,
+                        subtotal: (product?.price || 0) * item.qty
+                    };
+                }),
+                subtotal,
+                shippingCost: 0,
+                total: subtotal,
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+                confirmedAt: null,
+                shippedAt: null,
+                completedAt: null
+            };
+
+            try {
+                // Save to Firebase
+                await saveToFirebase('orders', orderId, orderData);
+                
+                // Note: Don't add to local array here, let Firebase listener handle it
+                // This prevents duplicate entries
+
+                // Clear cart
+                saveCart([]);
+                updateCartBadge();
+                renderCart();
+
+                // Notify admin via WhatsApp
+                const itemsList = orderData.items.map(i => `• ${i.name} (${i.qty} ${i.unit})`).join('\n');
+                const message = `🛒 *PESANAN BARU*\n\nID: ${orderId}\n\n👤 *Customer:*\n${currentCustomer.name}\n${currentCustomer.phone}\n${currentCustomer.address}\n\n📦 *Pesanan:*\n${itemsList}\n\n💰 Subtotal: Rp ${subtotal.toLocaleString('id-ID')}\n\n_Silakan konfirmasi dan tambahkan ongkir_`;
+                
+                window.open(`https://wa.me/${settings.waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+
+                showToast('Order berhasil dikirim! 🎉');
+                
+                // Navigate to pesanan page
+                navigateTo('pesanan');
+            } catch (error) {
+                console.error('Error sending order:', error);
+                showToast('Gagal mengirim order. Coba lagi!');
+            }
+        }
+
+        function updateOrderBadge() {
+            const badge = document.getElementById('orderBadge');
+            if (!badge) return;
+            
+            if (!currentCustomer) {
+                badge.classList.add('hidden');
+                return;
+            }
+            
+            // Normalize phone number for comparison
+            const currentPhone = currentCustomer.phone.toString().replace(/\D/g, '');
+            
+            const customerOrders = orders.filter(o => {
+                const orderPhone = (o.customerId || o.customerPhone || '').toString().replace(/\D/g, '');
+                return orderPhone === currentPhone && 
+                       o.status !== 'completed' && 
+                       o.status !== 'cancelled';
+            });
+            
+            badge.textContent = customerOrders.length;
+            badge.classList.toggle('hidden', customerOrders.length === 0);
+        }
+
+        function renderCustomerOrders() {
+            const container = document.getElementById('ordersList');
+            const empty = document.getElementById('ordersEmpty');
+
+            if (!container || !empty) return;
+
+            if (!currentCustomer) {
+                container.innerHTML = '';
+                empty.innerHTML = `
+                    <span class="text-6xl">🔐</span>
+                    <p class="text-gray-500 mt-4">Silakan login untuk melihat pesanan</p>
+                    <button onclick="showCustomerModal()" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Masuk / Daftar</button>
+                `;
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            // Normalize phone number for comparison
+            const currentPhone = currentCustomer.phone.toString().replace(/\D/g, '');
+            
+            // Filter orders for current customer only and remove duplicates
+            const seen = new Set();
+            const customerOrders = orders.filter(o => {
+                // Normalize order's customer phone
+                const orderPhone = (o.customerId || o.customerPhone || '').toString().replace(/\D/g, '');
+                
+                // Check if this order belongs to current customer
+                const isCurrentCustomer = orderPhone === currentPhone;
+                
+                if (isCurrentCustomer && !seen.has(o.id)) {
+                    seen.add(o.id);
+                    return true;
+                }
+                return false;
+            });
+            
+            console.log('Current customer phone:', currentPhone);
+            console.log('Customer orders:', customerOrders.length, 'of', orders.length, 'total orders');
+            
+            if (customerOrders.length === 0) {
+                container.innerHTML = '';
+                empty.innerHTML = `
+                    <span class="text-6xl">📋</span>
+                    <p class="text-gray-500 mt-4">Belum ada pesanan</p>
+                    <button onclick="navigateTo('katalog')" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Mulai Belanja</button>
+                `;
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            
+            // Sort by newest first
+            const sortedOrders = [...customerOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            container.innerHTML = sortedOrders.map(order => `
+                <div class="order-card bg-white rounded-xl shadow-md p-4 mb-3 cursor-pointer" onclick="showOrderDetail('${order.id}')">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-semibold text-gray-800">${order.id}</p>
+                            <p class="text-xs text-gray-500">${formatDate(order.createdAt)}</p>
+                        </div>
+                        <span class="status-${order.status} px-3 py-1 rounded-full text-xs font-medium">${getStatusLabel(order.status)}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">${order.items ? order.items.length : 0} item</div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-green-600">Rp ${(order.total || 0).toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showOrderDetail(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const itemsList = order.items.map(item => `
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">${item.name}</p>
+                        <p class="text-xs text-gray-500">${item.qty} ${item.unit} × Rp ${item.price.toLocaleString('id-ID')}</p>
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">Rp ${item.subtotal.toLocaleString('id-ID')}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('orderDetailContent').innerHTML = `
+                <div class="mb-4">
+                    <span class="status-${order.status} px-3 py-1 rounded-full text-xs font-medium">${getStatusLabel(order.status)}</span>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-3 mb-4">
+                    <p class="text-xs text-gray-500 mb-1">Order ID</p>
+                    <p class="font-semibold text-gray-800">${order.id}</p>
+                    <p class="text-xs text-gray-500 mt-2">${formatDate(order.createdAt)}</p>
+                </div>
+
+                <h4 class="font-semibold text-gray-800 mb-2">Daftar Pesanan</h4>
+                <div class="bg-gray-50 rounded-xl p-3 mb-4">
+                    ${itemsList}
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-3 mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span class="font-medium">Rp ${order.subtotal.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Ongkir</span>
+                        <span class="font-medium">${order.shippingCost > 0 ? 'Rp ' + order.shippingCost.toLocaleString('id-ID') : 'Menunggu konfirmasi'}</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-gray-200">
+                        <span class="font-bold text-gray-800">Total</span>
+                        <span class="font-bold text-green-600">Rp ${order.total.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+
+
+            `;
+
+            document.getElementById('orderDetailModal').classList.remove('hidden');
+        }
+
+        function closeOrderDetailModal() {
+            document.getElementById('orderDetailModal').classList.add('hidden');
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                pending: '⏳ Menunggu',
+                confirmed: '✅ Dikonfirmasi',
+                shipped: '🚚 Dikirim',
+                completed: '✓ Selesai',
+                cancelled: '✗ Dibatalkan'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Admin Functions
+        function loginAdmin() {
+            if (document.getElementById('adminPin').value === settings.pin) {
+                isAdminLoggedIn = true;
+                document.getElementById('adminLogin').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('adminPin').value = '';
+                renderAdminOrders();
+                renderAdminCustomers();
+                renderAdminProductList();
+                loadStoreProfileToForm();
+                document.getElementById('waNumber').value = settings.waNumber;
+                showToast('Login berhasil! ✓');
+            } else {
+                showToast('PIN salah!');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            document.getElementById('adminLogin').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            showToast('Berhasil logout');
+        }
+
+        function switchAdminTab(tab) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            ['orders', 'customers', 'catalog', 'store', 'settings', 'report'].forEach(t => {
+                document.getElementById(t + 'Tab').classList.add('hidden');
+            });
+            document.getElementById(tab + 'Tab').classList.remove('hidden');
+        }
+
+        // Admin Orders
+        function filterOrders(status) {
+            currentOrderFilter = status;
+            document.querySelectorAll('.order-filter').forEach(btn => {
+                btn.classList.remove('active', 'bg-gray-800', 'text-white');
+                btn.classList.add('bg-gray-100');
+            });
+            event.currentTarget.classList.add('active', 'bg-gray-800', 'text-white');
+            event.currentTarget.classList.remove('bg-gray-100');
+            renderAdminOrders();
+        }
+
+        function renderAdminOrders() {
+            const container = document.getElementById('adminOrdersList');
+            const empty = document.getElementById('adminOrdersEmpty');
+
+            // Remove duplicates
+            const seen = new Set();
+            let filtered = orders.filter(o => {
+                if (!seen.has(o.id)) {
+                    seen.add(o.id);
+                    return true;
+                }
+                return false;
+            });
+            
+            if (currentOrderFilter !== 'all') {
+                filtered = filtered.filter(o => o.status === currentOrderFilter);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            container.innerHTML = filtered.map(order => `
+                <div class="order-card bg-white rounded-xl shadow-md p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-semibold text-gray-800">${order.id}</p>
+                            <p class="text-xs text-gray-500">${formatDate(order.createdAt)}</p>
+                        </div>
+                        <span class="status-${order.status} px-3 py-1 rounded-full text-xs font-medium">${getStatusLabel(order.status)}</span>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-2 mb-3">
+                        <p class="font-medium text-sm text-gray-800">${order.customerName}</p>
+                        <p class="text-xs text-gray-500">${order.customerPhone}</p>
+                        <p class="text-xs text-gray-500">${order.customerAddress}</p>
+                    </div>
+
+                    <div class="text-xs text-gray-600 mb-2">
+                        ${order.items.map(i => `${i.name} (${i.qty})`).join(', ')}
+                    </div>
+
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <p class="text-xs text-gray-500">Subtotal: Rp ${order.subtotal.toLocaleString('id-ID')}</p>
+                            <p class="text-xs text-gray-500">Ongkir: ${order.shippingCost > 0 ? 'Rp ' + order.shippingCost.toLocaleString('id-ID') : '-'}</p>
+                        </div>
+                        <span class="font-bold text-green-600">Rp ${order.total.toLocaleString('id-ID')}</span>
+                    </div>
+
+                    ${order.status === 'pending' ? `
+                        <div class="flex gap-2 mb-2">
+                            <input type="number" id="shipping-${order.id}" placeholder="Ongkir" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                            <button onclick="confirmOrder('${order.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600">Konfirmasi</button>
+                        </div>
+                    ` : ''}
+                    
+                    ${order.status === 'confirmed' ? `
+                        <button onclick="shipOrder('${order.id}')" class="w-full bg-purple-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-600">
+                            <i class="fas fa-truck mr-1"></i> Tandai Dikirim
+                        </button>
+                    ` : ''}
+
+                    ${order.status === 'shipped' ? `
+                        <button onclick="completeOrder('${order.id}')" class="w-full bg-green-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-600">
+                            <i class="fas fa-check mr-1"></i> Selesai
+                        </button>
+                    ` : ''}
+
+                    <button onclick="chatCustomer('${order.customerPhone}', '${order.id}')" class="w-full mt-2 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-medium hover:bg-green-200">
+                        <i class="fab fa-whatsapp mr-1"></i> Chat Customer
                     </button>
                 </div>
             `).join('');
         }
 
-        // Add Bank Account
+        async function confirmOrder(orderId) {
+            const shippingInput = document.getElementById(`shipping-${orderId}`);
+            const shippingCost = parseInt(shippingInput?.value) || 0;
+
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const total = order.subtotal + shippingCost;
+            const updateData = {
+                shippingCost,
+                total,
+                status: 'confirmed',
+                confirmedAt: new Date().toISOString()
+            };
+
+            await saveToFirebase('orders', orderId, updateData);
+            Object.assign(order, updateData);
+            
+            // Update UI
+            renderAdminOrders();
+            renderCustomerOrders();
+            updateOrderBadge();
+
+            // Notify customer
+            const banks = storeProfile.banks || [];
+            let bankInfo = '';
+            if (banks.length > 0) {
+                bankInfo = '\n\n🏦 *Transfer ke:*\n' + banks.map(b => `${b.name}: ${b.number} (${b.holder})`).join('\n');
+            }
+
+            const message = `Halo ${order.customerName}! 👋\n\nPesanan Anda telah dikonfirmasi:\n\n🛒 Order ID: ${orderId}\n💰 Subtotal: Rp ${order.subtotal.toLocaleString('id-ID')}\n🚚 Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}\n\n💵 *TOTAL: Rp ${total.toLocaleString('id-ID')}*${bankInfo}\n\nSilakan lakukan pembayaran. Terima kasih! 🙏`;
+            window.open(`https://wa.me/${order.customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+
+            showToast('Order dikonfirmasi! ✓');
+        }
+
+        async function shipOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const updateData = {
+                status: 'shipped',
+                shippedAt: new Date().toISOString()
+            };
+
+            await saveToFirebase('orders', orderId, updateData);
+            Object.assign(order, updateData);
+            
+            // Update UI
+            renderAdminOrders();
+            renderCustomerOrders();
+            updateOrderBadge();
+
+            // Notify customer
+            const message = `Halo ${order.customerName}! 🚚\n\nPesanan Anda sedang dalam perjalanan!\n\n🛒 Order ID: ${orderId}\n\nMohon ditunggu ya. Terima kasih! 🙏`;
+            window.open(`https://wa.me/${order.customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+
+            showToast('Order ditandai dikirim! ✓');
+        }
+
+        async function completeOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const updateData = {
+                status: 'completed',
+                completedAt: new Date().toISOString()
+            };
+
+            await saveToFirebase('orders', orderId, updateData);
+            Object.assign(order, updateData);
+            
+            // Update UI
+            renderAdminOrders();
+            renderCustomerOrders();
+            updateOrderBadge();
+
+            showToast('Order selesai! ✓');
+        }
+
+        function chatCustomer(phone, orderId) {
+            const message = `Halo! Ini dari ${storeProfile.name || 'Varsha'} mengenai pesanan ${orderId}. `;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+        }
+
+        // Admin Customers
+        function renderAdminCustomers() {
+            const container = document.getElementById('adminCustomersList');
+            document.getElementById('customerCount').textContent = `${customers.length} customer`;
+
+            if (customers.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada customer</p>';
+                return;
+            }
+
+            container.innerHTML = customers.map(c => `
+                <div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-green-600"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm text-gray-800">${c.name}</p>
+                        <p class="text-xs text-gray-500">${c.phone}</p>
+                        <p class="text-xs text-gray-400 truncate">${c.address}</p>
+                    </div>
+                    <button onclick="chatCustomer('${c.phone}', '')" class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200">
+                        <i class="fab fa-whatsapp text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Admin Products
+        function renderAdminProductList() {
+            const container = document.getElementById('adminProductList');
+            document.getElementById('productCount').textContent = `${products.length} produk`;
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada produk</p>';
+                return;
+            }
+            container.innerHTML = products.map(p => `
+                <div class="product-admin-card flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
+                    <img src="${p.image}" class="w-14 h-14 object-cover rounded-lg" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-semibold text-sm text-gray-800 truncate">${p.name}</h4>
+                        <p class="text-xs text-gray-500">${p.category} • Rp ${p.price.toLocaleString('id-ID')}/${p.unit}</p>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="editProduct('${p.id}')" class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200"><i class="fas fa-edit text-xs"></i></button>
+                        <button onclick="showDeleteModal('${p.id}')" class="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200"><i class="fas fa-trash text-xs"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddProductModal() {
+            document.getElementById('formModalTitle').textContent = 'Tambah Produk';
+            document.getElementById('productForm').reset();
+            document.getElementById('editProductId').value = '';
+            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('productFormModal').classList.remove('hidden');
+        }
+
+        function editProduct(id) {
+            const product = products.find(p => p.id.toString() === id.toString());
+            if (!product) return;
+            document.getElementById('formModalTitle').textContent = 'Edit Produk';
+            document.getElementById('editProductId').value = id;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productUnit').value = product.unit;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productImage').value = product.image;
+            document.getElementById('productDesc').value = product.desc;
+            document.getElementById('previewImg').src = product.image;
+            document.getElementById('imagePreview').classList.remove('hidden');
+            document.getElementById('productFormModal').classList.remove('hidden');
+        }
+
+        function closeProductFormModal() {
+            document.getElementById('productFormModal').classList.add('hidden');
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editProductId').value;
+            const data = {
+                name: document.getElementById('productName').value.trim(),
+                price: parseInt(document.getElementById('productPrice').value),
+                unit: document.getElementById('productUnit').value.trim(),
+                category: document.getElementById('productCategory').value,
+                image: document.getElementById('productImage').value.trim(),
+                desc: document.getElementById('productDesc').value.trim()
+            };
+            
+            if (editId) {
+                const idx = products.findIndex(p => p.id.toString() === editId.toString());
+                if (idx !== -1) {
+                    products[idx] = { ...products[idx], ...data };
+                    await saveToFirebase('products', editId.toString(), data);
+                }
+            } else {
+                const newId = products.length > 0 ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
+                const newProduct = { id: newId.toString(), ...data };
+                products.push(newProduct);
+                await saveToFirebase('products', newId.toString(), data);
+            }
+            
+            localStorage.setItem('varshaProducts', JSON.stringify(products));
+            closeProductFormModal();
+            renderAdminProductList();
+            renderProducts();
+            renderFeaturedProducts();
+            showToast('Produk berhasil disimpan! ✓');
+        }
+
+        function showDeleteModal(id) {
+            const product = products.find(p => p.id.toString() === id.toString());
+            if (!product) return;
+            deleteProductId = id;
+            document.getElementById('deleteProductName').textContent = `"${product.name}" akan dihapus permanen`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            deleteProductId = null;
+        }
+
+        async function confirmDelete() {
+            if (deleteProductId) {
+                await deleteFromFirebase('products', deleteProductId.toString());
+                products = products.filter(p => p.id.toString() !== deleteProductId.toString());
+                localStorage.setItem('varshaProducts', JSON.stringify(products));
+                renderAdminProductList();
+                renderProducts();
+                renderFeaturedProducts();
+                showToast('Produk berhasil dihapus! ✓');
+            }
+            closeDeleteModal();
+        }
+
+        // Store Profile Functions
+        function loadStoreProfileToForm() {
+            document.getElementById('storeLogo').value = storeProfile.logo || '';
+            document.getElementById('storeEmoji').value = storeProfile.emoji || '🍊';
+            document.getElementById('storeName').value = storeProfile.name || 'Varsha';
+            document.getElementById('storeTagline').value = storeProfile.tagline || 'Fruits & Goods';
+            document.getElementById('storeAddress').value = storeProfile.address || '';
+            document.getElementById('storeHours').value = storeProfile.hours || '08:00 - 21:00 WIB';
+            
+            const social = storeProfile.social || {};
+            document.getElementById('socialInstagram').value = social.instagram || '';
+            document.getElementById('socialFacebook').value = social.facebook || '';
+            document.getElementById('socialTiktok').value = social.tiktok || '';
+            document.getElementById('socialShopee').value = social.shopee || '';
+            document.getElementById('socialTokopedia').value = social.tokopedia || '';
+            document.getElementById('socialYoutube').value = social.youtube || '';
+            
+            renderBankAccountsAdmin();
+        }
+
+        function renderBankAccountsAdmin() {
+            const container = document.getElementById('bankAccountsAdmin');
+            const banks = storeProfile.banks || [];
+            container.innerHTML = banks.length === 0 ? '<p class="text-gray-500 text-sm text-center py-2">Belum ada rekening</p>' : 
+                banks.map((bank, i) => `
+                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="flex-1 text-sm"><span class="font-medium">${bank.name}</span> - ${bank.number} (${bank.holder})</div>
+                        <button onclick="removeBankAccount(${i})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                    </div>
+                `).join('');
+        }
+
         function addBankAccount() {
             const name = document.getElementById('newBankName').value.trim();
             const number = document.getElementById('newBankNumber').value.trim();
             const holder = document.getElementById('newBankHolder').value.trim();
-
-            if (!name || !number || !holder) {
-                showToast('Lengkapi semua field rekening!');
-                return;
-            }
-
+            if (!name || !number || !holder) { showToast('Lengkapi semua data rekening!'); return; }
             if (!storeProfile.banks) storeProfile.banks = [];
             storeProfile.banks.push({ name, number, holder });
-
             document.getElementById('newBankName').value = '';
             document.getElementById('newBankNumber').value = '';
             document.getElementById('newBankHolder').value = '';
-
             renderBankAccountsAdmin();
             showToast('Rekening ditambahkan!');
         }
 
-        // Remove Bank Account
-        function removeBankAccount(index) {
-            storeProfile.banks.splice(index, 1);
+        function removeBankAccount(i) {
+            storeProfile.banks.splice(i, 1);
             renderBankAccountsAdmin();
         }
 
-        // Copy to Clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Nomor rekening disalin! ✓');
-            });
-        }
-
-        // Apply Hero Settings to UI
-        function applyHeroSettings() {
-            const heroBanner = document.getElementById('heroBanner');
-            heroBanner.style.background = `linear-gradient(to right, ${heroSettings.colorFrom}, ${heroSettings.colorTo})`;
-            document.getElementById('heroTitle').textContent = heroSettings.title || 'Selamat Datang! 👋';
-            document.getElementById('heroSubtitle').textContent = heroSettings.subtitle || 'Buah segar & berkualitas';
-            document.getElementById('heroEmoji').textContent = heroSettings.emoji || '🍇';
-            document.getElementById('promoTitle').textContent = heroSettings.promoTitle || 'Buah Segar Setiap Hari!';
-            document.getElementById('promoSubtitle').textContent = heroSettings.promoSubtitle || 'Kualitas terbaik untuk keluarga Anda';
-        }
-
-        // Save Store Profile
         async function saveStoreProfile() {
             storeProfile.logo = document.getElementById('storeLogo').value.trim();
             storeProfile.emoji = document.getElementById('storeEmoji').value.trim() || '🍊';
@@ -1213,250 +2043,332 @@
                 tokopedia: document.getElementById('socialTokopedia').value.trim(),
                 youtube: document.getElementById('socialYoutube').value.trim()
             };
-
             localStorage.setItem('varshaStoreProfile', JSON.stringify(storeProfile));
-            await saveStoreProfileToFirebase();
+            await saveToFirebase('settings', 'profile', storeProfile);
             applyStoreProfile();
             showToast('Profil toko berhasil disimpan! ✓');
         }
 
-        // Save Hero Settings
-        async function saveHeroSettings() {
-            heroSettings.title = document.getElementById('heroTitleInput').value.trim() || 'Selamat Datang! 👋';
-            heroSettings.subtitle = document.getElementById('heroSubtitleInput').value.trim();
-            heroSettings.emoji = document.getElementById('heroEmojiInput').value.trim() || '🍇';
-            heroSettings.colorFrom = document.getElementById('heroColorFrom').value;
-            heroSettings.colorTo = document.getElementById('heroColorTo').value;
-            heroSettings.promoTitle = document.getElementById('promoTitleInput').value.trim();
-            heroSettings.promoSubtitle = document.getElementById('promoSubtitleInput').value.trim();
-
-            localStorage.setItem('varshaHeroSettings', JSON.stringify(heroSettings));
-            await saveHeroSettingsToFirebase();
-            applyHeroSettings();
-            showToast('Hero section berhasil disimpan! ✓');
+        // Settings Functions
+        async function saveWANumber() {
+            const wa = document.getElementById('waNumber').value.replace(/\D/g, '');
+            if (wa.length < 10) { showToast('Nomor WA tidak valid!'); return; }
+            settings.waNumber = wa;
+            localStorage.setItem('varshaSettings', JSON.stringify(settings));
+            await saveToFirebase('settings', 'store', settings);
+            updateDisplayWA();
+            showToast('Nomor WhatsApp berhasil disimpan! ✓');
         }
 
-        // Load Store Profile to Admin Form
-        function loadStoreProfileToForm() {
-            document.getElementById('storeLogo').value = storeProfile.logo || '';
-            document.getElementById('storeEmoji').value = storeProfile.emoji || '🍊';
-            document.getElementById('storeName').value = storeProfile.name || 'Varsha';
-            document.getElementById('storeTagline').value = storeProfile.tagline || 'Fruits & Goods';
-            document.getElementById('storeAddress').value = storeProfile.address || '';
-            document.getElementById('storeHours').value = storeProfile.hours || '08:00 - 21:00 WIB';
-
-            const social = storeProfile.social || {};
-            document.getElementById('socialInstagram').value = social.instagram || '';
-            document.getElementById('socialFacebook').value = social.facebook || '';
-            document.getElementById('socialTiktok').value = social.tiktok || '';
-            document.getElementById('socialShopee').value = social.shopee || '';
-            document.getElementById('socialTokopedia').value = social.tokopedia || '';
-            document.getElementById('socialYoutube').value = social.youtube || '';
-
-            renderBankAccountsAdmin();
-
-            // Update logo preview
-            updateAdminLogoPreview();
+        function updateDisplayWA() {
+            document.getElementById('displayWA').textContent = '+' + settings.waNumber.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1 $2-$3-$4');
         }
 
-        // Update Admin Logo Preview
-        function updateAdminLogoPreview() {
-            const preview = document.getElementById('adminLogoPreview');
-            const logoUrl = document.getElementById('storeLogo').value.trim();
-            const emoji = document.getElementById('storeEmoji').value.trim() || '🍊';
-
-            if (logoUrl) {
-                preview.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-4xl\\'>${emoji}</span>'">`;
-            } else {
-                preview.innerHTML = `<span class="text-4xl">${emoji}</span>`;
-            }
+        async function changePin() {
+            const newPin = document.getElementById('newPin').value;
+            if (newPin.length < 4) { showToast('PIN minimal 4 digit!'); return; }
+            settings.pin = newPin;
+            localStorage.setItem('varshaSettings', JSON.stringify(settings));
+            await saveToFirebase('settings', 'store', settings);
+            document.getElementById('newPin').value = '';
+            showToast('PIN berhasil diubah! ✓');
         }
 
-        // Load Hero Settings to Form
-        function loadHeroSettingsToForm() {
-            document.getElementById('heroTitleInput').value = heroSettings.title || 'Selamat Datang! 👋';
-            document.getElementById('heroSubtitleInput').value = heroSettings.subtitle || '';
-            document.getElementById('heroEmojiInput').value = heroSettings.emoji || '🍇';
-            document.getElementById('heroColorFrom').value = heroSettings.colorFrom || '#22c55e';
-            document.getElementById('heroColorTo').value = heroSettings.colorTo || '#16a34a';
-            document.getElementById('promoTitleInput').value = heroSettings.promoTitle || 'Buah Segar Setiap Hari!';
-            document.getElementById('promoSubtitleInput').value = heroSettings.promoSubtitle || '';
-        }
-
-        // Save Firebase config
-        function saveFirebaseConfig() {
-            const config = {
-                apiKey: document.getElementById('firebaseApiKey').value.trim(),
-                authDomain: document.getElementById('firebaseAuthDomain').value.trim(),
-                projectId: document.getElementById('firebaseProjectId').value.trim(),
-                storageBucket: document.getElementById('firebaseStorageBucket').value.trim(),
-                messagingSenderId: document.getElementById('firebaseMessagingSenderId').value.trim(),
-                appId: document.getElementById('firebaseAppId').value.trim()
-            };
-
-            if (!config.apiKey || !config.projectId) {
-                showToast('API Key dan Project ID wajib diisi!');
-                return;
-            }
-
-            firebaseConfig = config;
-            localStorage.setItem('varshaFirebaseConfig', JSON.stringify(config));
-
-            if (firebase.apps.length) {
-                firebase.app().delete().then(() => {
-                    initFirebase();
-                    showToast('Konfigurasi Firebase tersimpan! ✓');
-                });
-            } else {
-                initFirebase();
-                showToast('Konfigurasi Firebase tersimpan! ✓');
-            }
-        }
-
-        // Upload all data to Firebase
         async function uploadAllToFirebase() {
-            if (!db) {
-                showToast('Firebase belum terhubung!');
-                return;
-            }
-
-            try {
-                updateSyncStatus('syncing', 'Uploading...');
-                showToast('Mengupload data...');
-
-                const batch = db.batch();
-
-                products.forEach(product => {
-                    const docRef = db.collection('products').doc(product.id.toString());
-                    batch.set(docRef, {
-                        name: product.name,
-                        price: product.price,
-                        unit: product.unit,
-                        category: product.category,
-                        image: product.image,
-                        desc: product.desc
-                    });
-                });
-
-                batch.set(db.collection('settings').doc('store'), {
-                    waNumber: settings.waNumber,
-                    pin: settings.pin
-                });
-
-                batch.set(db.collection('settings').doc('profile'), storeProfile);
-                batch.set(db.collection('settings').doc('hero'), heroSettings);
-
-                await batch.commit();
-                updateSyncStatus('connected', 'Terhubung');
-                showToast('Semua data berhasil diupload! ✓');
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('Gagal upload data!');
-                updateSyncStatus('error', 'Error');
-            }
+            if (!db) { showToast('Firebase tidak terhubung!'); return; }
+            showToast('Mengupload data...');
+            const batch = db.batch();
+            products.forEach(p => {
+                const ref = db.collection('products').doc(p.id.toString());
+                batch.set(ref, { name: p.name, price: p.price, unit: p.unit, category: p.category, image: p.image, desc: p.desc });
+            });
+            batch.set(db.collection('settings').doc('store'), settings);
+            batch.set(db.collection('settings').doc('profile'), storeProfile);
+            await batch.commit();
+            showToast('Semua data berhasil diupload! ✓');
         }
 
-        // Download from Firebase
         async function downloadFromFirebase() {
-            if (!db) {
-                showToast('Firebase belum terhubung!');
-                return;
-            }
-
+            if (!db) { showToast('Firebase tidak terhubung!'); return; }
             showToast('Mengunduh data...');
             await loadFromFirebase();
             showToast('Data berhasil diunduh! ✓');
         }
 
-        // Load Firebase config to form
-        function loadFirebaseConfigToForm() {
-            const config = firebaseConfig || defaultFirebaseConfig;
-            document.getElementById('firebaseApiKey').value = config.apiKey || '';
-            document.getElementById('firebaseAuthDomain').value = config.authDomain || '';
-            document.getElementById('firebaseProjectId').value = config.projectId || '';
-            document.getElementById('firebaseStorageBucket').value = config.storageBucket || '';
-            document.getElementById('firebaseMessagingSenderId').value = config.messagingSenderId || '';
-            document.getElementById('firebaseAppId').value = config.appId || '';
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            showToast('Berhasil disalin! ✓');
         }
 
-        // Render all components
-        function renderAll() {
-            renderFeaturedProducts();
-            renderProducts();
-            updateCartBadge();
-            updateDisplayWA();
-            applyStoreProfile();
-            applyHeroSettings();
-            if (document.getElementById('waNumber')) {
-                document.getElementById('waNumber').value = settings.waNumber;
-            }
-            if (isAdminLoggedIn) {
-                renderAdminProductList();
-                loadStoreProfileToForm();
-                loadHeroSettingsToForm();
-            }
+        // Excel Export Functions
+        function getFileName(type) {
+            const now = new Date();
+            const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const time = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+            return `varsha_${type}_${date}_${time}.xlsx`;
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            const hasFirebase = initFirebase();
+        function exportOrdersToExcel() {
+            if (orders.length === 0) {
+                showToast('Tidak ada data pesanan!');
+                return;
+            }
+
+            const data = orders.map(order => ({
+                'Order ID': order.id,
+                'Tanggal': formatDateExcel(order.createdAt),
+                'Nama Customer': order.customerName || '-',
+                'No. HP': order.customerPhone || '-',
+                'Alamat': order.customerAddress || '-',
+                'Items': order.items ? order.items.map(i => `${i.name} (${i.qty} ${i.unit})`).join(', ') : '-',
+                'Subtotal': order.subtotal || 0,
+                'Ongkir': order.shippingCost || 0,
+                'Total': order.total || 0,
+                'Status': getStatusText(order.status),
+                'Dikonfirmasi': order.confirmedAt ? formatDateExcel(order.confirmedAt) : '-',
+                'Dikirim': order.shippedAt ? formatDateExcel(order.shippedAt) : '-',
+                'Selesai': order.completedAt ? formatDateExcel(order.completedAt) : '-'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Pesanan');
             
-            if (!hasFirebase) {
-                loadFromLocalStorage();
+            // Auto-fit columns
+            const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
+            ws['!cols'] = colWidths;
+
+            XLSX.writeFile(wb, getFileName('pesanan'));
+            showToast('Laporan pesanan berhasil didownload! ✓');
+        }
+
+        function exportFilteredOrdersToExcel() {
+            const dateFrom = document.getElementById('reportDateFrom').value;
+            const dateTo = document.getElementById('reportDateTo').value;
+            const status = document.getElementById('reportStatus').value;
+
+            let filteredOrders = [...orders];
+
+            // Filter by date range
+            if (dateFrom) {
+                const fromDate = new Date(dateFrom);
+                fromDate.setHours(0, 0, 0, 0);
+                filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) >= fromDate);
+            }
+            if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999);
+                filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) <= toDate);
             }
 
-            loadFirebaseConfigToForm();
+            // Filter by status
+            if (status !== 'all') {
+                filteredOrders = filteredOrders.filter(o => o.status === status);
+            }
 
-            // Image preview listener
-            document.getElementById('productImage').addEventListener('input', function() {
-                const url = this.value;
-                const preview = document.getElementById('imagePreview');
-                const img = document.getElementById('previewImg');
-                if (url && url.startsWith('http')) {
-                    img.src = url;
-                    preview.classList.remove('hidden');
-                    img.onerror = () => preview.classList.add('hidden');
-                } else {
-                    preview.classList.add('hidden');
-                }
+            if (filteredOrders.length === 0) {
+                showToast('Tidak ada data sesuai filter!');
+                return;
+            }
+
+            const data = filteredOrders.map(order => ({
+                'Order ID': order.id,
+                'Tanggal': formatDateExcel(order.createdAt),
+                'Nama Customer': order.customerName || '-',
+                'No. HP': order.customerPhone || '-',
+                'Alamat': order.customerAddress || '-',
+                'Items': order.items ? order.items.map(i => `${i.name} (${i.qty} ${i.unit})`).join(', ') : '-',
+                'Subtotal': order.subtotal || 0,
+                'Ongkir': order.shippingCost || 0,
+                'Total': order.total || 0,
+                'Status': getStatusText(order.status),
+                'Dikonfirmasi': order.confirmedAt ? formatDateExcel(order.confirmedAt) : '-',
+                'Dikirim': order.shippedAt ? formatDateExcel(order.shippedAt) : '-',
+                'Selesai': order.completedAt ? formatDateExcel(order.completedAt) : '-'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Pesanan');
+            
+            const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
+            ws['!cols'] = colWidths;
+
+            XLSX.writeFile(wb, getFileName('pesanan_filtered'));
+            showToast(`${filteredOrders.length} pesanan berhasil didownload! ✓`);
+        }
+
+        function exportCustomersToExcel() {
+            if (customers.length === 0) {
+                showToast('Tidak ada data customer!');
+                return;
+            }
+
+            const data = customers.map((c, idx) => ({
+                'No': idx + 1,
+                'Nama': c.name || '-',
+                'No. HP': c.phone || '-',
+                'Alamat': c.address || '-',
+                'Tanggal Daftar': c.createdAt ? formatDateExcel(c.createdAt) : '-'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Customers');
+            
+            const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 20) }));
+            ws['!cols'] = colWidths;
+
+            XLSX.writeFile(wb, getFileName('customers'));
+            showToast('Data customer berhasil didownload! ✓');
+        }
+
+        function exportProductsToExcel() {
+            if (products.length === 0) {
+                showToast('Tidak ada data produk!');
+                return;
+            }
+
+            const data = products.map((p, idx) => ({
+                'No': idx + 1,
+                'ID Produk': p.id,
+                'Nama Produk': p.name || '-',
+                'Kategori': p.category || '-',
+                'Harga': p.price || 0,
+                'Satuan': p.unit || '-',
+                'Deskripsi': p.desc || '-',
+                'URL Gambar': p.image || '-'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Produk');
+            
+            const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
+            ws['!cols'] = colWidths;
+
+            XLSX.writeFile(wb, getFileName('produk'));
+            showToast('Data produk berhasil didownload! ✓');
+        }
+
+        function exportAllToExcel() {
+            const wb = XLSX.utils.book_new();
+
+            // Orders Sheet
+            if (orders.length > 0) {
+                const ordersData = orders.map(order => ({
+                    'Order ID': order.id,
+                    'Tanggal': formatDateExcel(order.createdAt),
+                    'Nama Customer': order.customerName || '-',
+                    'No. HP': order.customerPhone || '-',
+                    'Alamat': order.customerAddress || '-',
+                    'Items': order.items ? order.items.map(i => `${i.name} (${i.qty} ${i.unit})`).join(', ') : '-',
+                    'Subtotal': order.subtotal || 0,
+                    'Ongkir': order.shippingCost || 0,
+                    'Total': order.total || 0,
+                    'Status': getStatusText(order.status)
+                }));
+                const wsOrders = XLSX.utils.json_to_sheet(ordersData);
+                XLSX.utils.book_append_sheet(wb, wsOrders, 'Pesanan');
+            }
+
+            // Customers Sheet
+            if (customers.length > 0) {
+                const customersData = customers.map((c, idx) => ({
+                    'No': idx + 1,
+                    'Nama': c.name || '-',
+                    'No. HP': c.phone || '-',
+                    'Alamat': c.address || '-',
+                    'Tanggal Daftar': c.createdAt ? formatDateExcel(c.createdAt) : '-'
+                }));
+                const wsCustomers = XLSX.utils.json_to_sheet(customersData);
+                XLSX.utils.book_append_sheet(wb, wsCustomers, 'Customers');
+            }
+
+            // Products Sheet
+            if (products.length > 0) {
+                const productsData = products.map((p, idx) => ({
+                    'No': idx + 1,
+                    'ID Produk': p.id,
+                    'Nama Produk': p.name || '-',
+                    'Kategori': p.category || '-',
+                    'Harga': p.price || 0,
+                    'Satuan': p.unit || '-',
+                    'Deskripsi': p.desc || '-'
+                }));
+                const wsProducts = XLSX.utils.json_to_sheet(productsData);
+                XLSX.utils.book_append_sheet(wb, wsProducts, 'Produk');
+            }
+
+            // Summary Sheet
+            const summaryData = [
+                { 'Keterangan': 'Total Pesanan', 'Jumlah': orders.length },
+                { 'Keterangan': 'Pesanan Menunggu', 'Jumlah': orders.filter(o => o.status === 'pending').length },
+                { 'Keterangan': 'Pesanan Dikonfirmasi', 'Jumlah': orders.filter(o => o.status === 'confirmed').length },
+                { 'Keterangan': 'Pesanan Dikirim', 'Jumlah': orders.filter(o => o.status === 'shipped').length },
+                { 'Keterangan': 'Pesanan Selesai', 'Jumlah': orders.filter(o => o.status === 'completed').length },
+                { 'Keterangan': 'Pesanan Dibatalkan', 'Jumlah': orders.filter(o => o.status === 'cancelled').length },
+                { 'Keterangan': 'Total Customer', 'Jumlah': customers.length },
+                { 'Keterangan': 'Total Produk', 'Jumlah': products.length },
+                { 'Keterangan': 'Total Pendapatan (Selesai)', 'Jumlah': orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.total || 0), 0) }
+            ];
+            const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
+
+            if (wb.SheetNames.length === 0) {
+                showToast('Tidak ada data untuk diexport!');
+                return;
+            }
+
+            XLSX.writeFile(wb, getFileName('semua_data'));
+            showToast('Semua data berhasil didownload! ✓');
+        }
+
+        function formatDateExcel(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleString('id-ID', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
+        }
 
-            // Store logo preview listeners
-            document.getElementById('storeLogo').addEventListener('input', updateAdminLogoPreview);
-            document.getElementById('storeEmoji').addEventListener('input', updateAdminLogoPreview);
-
-            setTimeout(() => {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }, 1000);
-        });
+        function getStatusText(status) {
+            const labels = {
+                pending: 'Menunggu',
+                confirmed: 'Dikonfirmasi',
+                shipped: 'Dikirim',
+                completed: 'Selesai',
+                cancelled: 'Dibatalkan'
+            };
+            return labels[status] || status;
+        }
 
         // Navigation
         function navigateTo(page) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(page + 'Page').classList.add('active');
-            if (event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
-                event.currentTarget.classList.add('active');
+            if (page === 'keranjang') renderCart();
+            if (page === 'katalog') renderProducts();
+            if (page === 'pesanan') {
+                renderCustomerOrders();
+                updateOrderBadge();
             }
-            
-            if (page === 'keranjang') renderCart();
-            if (page === 'katalog') renderProducts();
-            
             window.scrollTo(0, 0);
         }
 
-        function navigateToPage(page) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(page + 'Page').classList.add('active');
-            
-            if (page === 'keranjang') renderCart();
-            if (page === 'katalog') renderProducts();
-            
-            window.scrollTo(0, 0);
+        function filterByCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            if (event?.currentTarget) event.currentTarget.classList.add('active');
+            renderProducts();
+            navigateTo('katalog');
         }
 
-        // Search
         function showSearch() {
             document.getElementById('searchBar').classList.remove('hidden');
             document.getElementById('searchInput').focus();
@@ -1470,481 +2382,32 @@
 
         function searchProducts() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = products.filter(p => p.name.toLowerCase().includes(query));
-            renderProducts(filtered);
-            navigateTo('katalog');
-            document.querySelectorAll('.nav-item')[0].classList.add('active');
-        }
-
-        // Render Featured Products
-        function renderFeaturedProducts() {
-            const featured = products.slice(0, 4);
-            const container = document.getElementById('featuredProducts');
-            container.innerHTML = featured.map(p => createProductCard(p)).join('');
-        }
-
-        // Render Products
-        function renderProducts(productList = null) {
-            const container = document.getElementById('productGrid');
-            let filtered = productList || products;
-            
-            if (!productList && currentCategory !== 'all') {
-                filtered = products.filter(p => p.category === currentCategory);
-            }
-            
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-2 text-center py-12">
-                        <span class="text-5xl">📦</span>
-                        <p class="text-gray-500 mt-3">Belum ada produk</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = filtered.map(p => createProductCard(p)).join('');
-        }
-
-        // Create Product Card
-        function createProductCard(product) {
-            const productId = typeof product.id === 'string' ? product.id : product.id.toString();
-            return `
-                <div class="product-card bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer" onclick="showProductDetail('${productId}')">
-                    <div class="relative">
-                        <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
-                        <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">${product.category}</span>
-                    </div>
-                    <div class="p-3">
-                        <h3 class="font-semibold text-sm text-gray-800 truncate">${product.name}</h3>
-                        <p class="text-xs text-gray-500">per ${product.unit}</p>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
-                            <button onclick="event.stopPropagation(); addToCart('${productId}')" class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition">
-                                <i class="fas fa-plus text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Filter by Category
-        function filterByCategory(category) {
-            currentCategory = category;
-            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('active');
-            }
-            renderProducts();
+            renderProducts(products.filter(p => p.name.toLowerCase().includes(query)));
             navigateTo('katalog');
         }
 
-        // Show Product Detail
-        function showProductDetail(id) {
-            const product = products.find(p => p.id.toString() === id.toString());
-            if (!product) return;
-            
-            const modal = document.getElementById('productModal');
-            const content = document.getElementById('modalContent');
-            const productId = product.id.toString();
-            
-            content.innerHTML = `
-                <img src="${product.image}" alt="${product.name}" class="w-full h-56 object-cover rounded-2xl mb-4" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
-                <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">${product.category}</span>
-                <h2 class="text-xl font-bold text-gray-800 mt-2">${product.name}</h2>
-                <p class="text-gray-500 text-sm mt-1">${product.desc}</p>
-                <div class="flex items-baseline gap-2 mt-3">
-                    <span class="text-2xl font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
-                    <span class="text-gray-500 text-sm">/ ${product.unit}</span>
-                </div>
-                <div class="flex gap-3 mt-6">
-                    <button onclick="addToCart('${productId}'); closeModal()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
-                        <i class="fas fa-cart-plus mr-2"></i> Tambah ke Keranjang
-                    </button>
-                    <button onclick="orderSingleProduct('${productId}')" class="flex-1 btn-whatsapp text-white py-3 rounded-xl font-semibold transition">
-                        <i class="fab fa-whatsapp mr-2"></i> Pesan Langsung
-                    </button>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
-            modal.onclick = (e) => {
-                if (e.target === modal) closeModal();
-            };
-        }
-
-        function closeModal() {
-            document.getElementById('productModal').classList.add('hidden');
-        }
-
-        // Cart Functions
-        function addToCart(id) {
-            const product = products.find(p => p.id.toString() === id.toString());
-            if (!product) return;
-            
-            const existing = cart.find(item => item.id.toString() === id.toString());
-            if (existing) {
-                existing.qty++;
-            } else {
-                cart.push({ id: id.toString(), qty: 1 });
-            }
-            saveCart();
-            updateCartBadge();
-            showToast('Ditambahkan ke keranjang! 🛒');
-        }
-
-        function removeFromCart(id) {
-            cart = cart.filter(item => item.id.toString() !== id.toString());
-            saveCart();
-            updateCartBadge();
-            renderCart();
-        }
-
-        function updateQty(id, delta) {
-            const item = cart.find(item => item.id.toString() === id.toString());
-            if (item) {
-                item.qty += delta;
-                if (item.qty <= 0) {
-                    removeFromCart(id);
-                    return;
-                }
-            }
-            saveCart();
-            renderCart();
-        }
-
-        function saveCart() {
-            localStorage.setItem('varshaCart', JSON.stringify(cart));
-        }
-
-        function updateCartBadge() {
-            const badge = document.getElementById('cartBadge');
-            const total = cart.reduce((sum, item) => sum + item.qty, 0);
-            badge.textContent = total;
-            badge.classList.toggle('hidden', total === 0);
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cartItems');
-            const emptyState = document.getElementById('cartEmpty');
-            const summary = document.getElementById('cartSummary');
-            
-            cart = cart.filter(item => products.find(p => p.id.toString() === item.id.toString()));
-            saveCart();
-            
-            if (cart.length === 0) {
-                container.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                summary.classList.add('hidden');
-                return;
-            }
-            
-            emptyState.classList.add('hidden');
-            summary.classList.remove('hidden');
-            
-            container.innerHTML = cart.map(item => {
-                const product = products.find(p => p.id.toString() === item.id.toString());
-                if (!product) return '';
-                return `
-                    <div class="bg-white rounded-xl shadow-md p-3 mb-3 flex gap-3">
-                        <img src="${product.image}" alt="${product.name}" class="w-20 h-20 object-cover rounded-lg" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-800 text-sm">${product.name}</h4>
-                            <p class="text-green-600 font-bold text-sm">Rp ${product.price.toLocaleString('id-ID')}/${product.unit}</p>
-                            <div class="flex items-center justify-between mt-2">
-                                <div class="flex items-center gap-2">
-                                    <button onclick="updateQty('${item.id}', -1)" class="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
-                                        <i class="fas fa-minus text-xs"></i>
-                                    </button>
-                                    <span class="font-semibold w-6 text-center">${item.qty}</span>
-                                    <button onclick="updateQty('${item.id}', 1)" class="w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600">
-                                        <i class="fas fa-plus text-xs"></i>
-                                    </button>
-                                </div>
-                                <button onclick="removeFromCart('${item.id}')" class="text-red-500 hover:text-red-600">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            updateCartTotal();
-        }
-
-        function updateCartTotal() {
-            const total = cart.reduce((sum, item) => {
-                const product = products.find(p => p.id.toString() === item.id.toString());
-                return sum + (product ? product.price * item.qty : 0);
-            }, 0);
-            
-            document.getElementById('totalPrice').textContent = `Rp ${total.toLocaleString('id-ID')}`;
-        }
-
-        // WhatsApp Order
-        function orderSingleProduct(id) {
-            const product = products.find(p => p.id.toString() === id.toString());
-            if (!product) return;
-            
-            const storeName = storeProfile.name || 'Varsha Fruits';
-            const message = `Halo ${storeName}! 🍊\n\nSaya ingin memesan:\n\n📦 *${product.name}*\n💰 Harga: Rp ${product.price.toLocaleString('id-ID')}/${product.unit}\n\nMohon info ketersediaan dan cara pembayaran. Terima kasih! 🙏`;
-            
-            const waUrl = `https://wa.me/${settings.waNumber}?text=${encodeURIComponent(message)}`;
-            window.open(waUrl, '_blank');
-            closeModal();
-        }
-
-        function checkoutWhatsApp() {
-            if (cart.length === 0) {
-                showToast('Keranjang masih kosong!');
-                return;
-            }
-            
-            const storeName = storeProfile.name || 'Varsha Fruits';
-            let message = `Halo ${storeName}! 🍊\n\nSaya ingin memesan:\n\n`;
-            
-            let total = 0;
-            cart.forEach(item => {
-                const product = products.find(p => p.id.toString() === item.id.toString());
-                if (product) {
-                    const itemTotal = product.price * item.qty;
-                    total += itemTotal;
-                    message += `📦 *${product.name}*\n   ${item.qty} ${product.unit} x Rp ${product.price.toLocaleString('id-ID')} = Rp ${itemTotal.toLocaleString('id-ID')}\n\n`;
-                }
-            });
-            
-            message += `----------------------------\n`;
-            message += `💰 *TOTAL: Rp ${total.toLocaleString('id-ID')}*\n\n`;
-            message += `Mohon konfirmasi ketersediaan dan info pembayaran. Terima kasih! 🙏`;
-            
-            const waUrl = `https://wa.me/${settings.waNumber}?text=${encodeURIComponent(message)}`;
-            window.open(waUrl, '_blank');
-        }
-
-        // Admin Functions
-        function loginAdmin() {
-            const pin = document.getElementById('adminPin').value;
-            if (pin === settings.pin) {
-                isAdminLoggedIn = true;
-                document.getElementById('adminLogin').classList.add('hidden');
-                document.getElementById('adminPanel').classList.remove('hidden');
-                document.getElementById('adminPin').value = '';
-                renderAdminProductList();
-                loadFirebaseConfigToForm();
-                loadStoreProfileToForm();
-                loadHeroSettingsToForm();
-                showToast('Login berhasil! ✓');
-            } else {
-                showToast('PIN salah! ✗');
-            }
-        }
-
-        function logoutAdmin() {
-            isAdminLoggedIn = false;
-            document.getElementById('adminLogin').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            showToast('Berhasil keluar');
-        }
-
-        function switchAdminTab(tab) {
-            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            
-            document.getElementById('storeTab').classList.add('hidden');
-            document.getElementById('settingsTab').classList.add('hidden');
-            document.getElementById('catalogTab').classList.add('hidden');
-            document.getElementById('heroTab').classList.add('hidden');
-            document.getElementById('firebaseTab').classList.add('hidden');
-            
-            document.getElementById(tab + 'Tab').classList.remove('hidden');
-
-            if (tab === 'catalog') renderAdminProductList();
-            if (tab === 'store') loadStoreProfileToForm();
-            if (tab === 'hero') loadHeroSettingsToForm();
-            if (tab === 'firebase') loadFirebaseConfigToForm();
-        }
-
-        function saveWANumber() {
-            const waNumber = document.getElementById('waNumber').value.replace(/\D/g, '');
-            if (waNumber.length < 10) {
-                showToast('Nomor WA tidak valid!');
-                return;
-            }
-            settings.waNumber = waNumber;
-            saveSettings();
-            saveSettingsToFirebase();
-            updateDisplayWA();
-            showToast('Nomor WA berhasil disimpan! ✓');
-        }
-
-        function updateDisplayWA() {
-            const wa = settings.waNumber;
-            document.getElementById('displayWA').textContent = '+' + wa.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1 $2-$3-$4');
-        }
-
-        function changePin() {
-            const newPin = document.getElementById('newPin').value;
-            if (newPin.length < 4) {
-                showToast('PIN minimal 4 digit!');
-                return;
-            }
-            settings.pin = newPin;
-            saveSettings();
-            saveSettingsToFirebase();
-            document.getElementById('newPin').value = '';
-            showToast('PIN berhasil diubah! ✓');
-        }
-
-        function saveSettings() {
-            localStorage.setItem('varshaSettings', JSON.stringify(settings));
-        }
-
-        // Catalog Management Functions
-        function renderAdminProductList() {
-            const container = document.getElementById('adminProductList');
-            document.getElementById('productCount').textContent = `${products.length} produk`;
-            
-            if (products.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8">
-                        <span class="text-4xl">📦</span>
-                        <p class="text-gray-500 mt-2">Belum ada produk</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = products.map(p => {
-                const productId = p.id.toString();
-                return `
-                    <div class="product-admin-card flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
-                        <img src="${p.image}" alt="${p.name}" class="w-14 h-14 object-cover rounded-lg" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-sm text-gray-800 truncate">${p.name}</h4>
-                            <p class="text-xs text-gray-500">${p.category} • Rp ${p.price.toLocaleString('id-ID')}/${p.unit}</p>
-                        </div>
-                        <div class="flex gap-1">
-                            <button onclick="editProduct('${productId}')" class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 transition" title="Edit">
-                                <i class="fas fa-edit text-xs"></i>
-                            </button>
-                            <button onclick="showDeleteModal('${productId}')" class="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition" title="Hapus">
-                                <i class="fas fa-trash text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function showAddProductModal() {
-            document.getElementById('formModalTitle').textContent = 'Tambah Produk';
-            document.getElementById('productForm').reset();
-            document.getElementById('editProductId').value = '';
-            document.getElementById('imagePreview').classList.add('hidden');
-            document.getElementById('productFormModal').classList.remove('hidden');
-        }
-
-        function editProduct(id) {
-            const product = products.find(p => p.id.toString() === id.toString());
-            if (!product) return;
-            
-            document.getElementById('formModalTitle').textContent = 'Edit Produk';
-            document.getElementById('editProductId').value = id;
-            document.getElementById('productName').value = product.name;
-            document.getElementById('productPrice').value = product.price;
-            document.getElementById('productUnit').value = product.unit;
-            document.getElementById('productCategory').value = product.category;
-            document.getElementById('productImage').value = product.image;
-            document.getElementById('productDesc').value = product.desc;
-            
-            const preview = document.getElementById('imagePreview');
-            const img = document.getElementById('previewImg');
-            img.src = product.image;
-            preview.classList.remove('hidden');
-            
-            document.getElementById('productFormModal').classList.remove('hidden');
-        }
-
-        function closeProductFormModal() {
-            document.getElementById('productFormModal').classList.add('hidden');
-            document.getElementById('productForm').reset();
-        }
-
-        async function saveProduct(e) {
-            e.preventDefault();
-            
-            const editId = document.getElementById('editProductId').value;
-            const productData = {
-                name: document.getElementById('productName').value.trim(),
-                price: parseInt(document.getElementById('productPrice').value),
-                unit: document.getElementById('productUnit').value.trim(),
-                category: document.getElementById('productCategory').value,
-                image: document.getElementById('productImage').value.trim(),
-                desc: document.getElementById('productDesc').value.trim()
-            };
-            
-            if (editId) {
-                const index = products.findIndex(p => p.id.toString() === editId.toString());
-                if (index !== -1) {
-                    products[index] = { ...products[index], ...productData };
-                    await saveProductToFirebase(products[index]);
-                    showToast('Produk berhasil diupdate! ✓');
-                }
-            } else {
-                const newId = products.length > 0 ? Math.max(...products.map(p => {
-                    const id = typeof p.id === 'string' ? parseInt(p.id) : p.id;
-                    return isNaN(id) ? 0 : id;
-                })) + 1 : 1;
-                const newProduct = { id: newId.toString(), ...productData };
-                products.push(newProduct);
-                await saveProductToFirebase(newProduct);
-                showToast('Produk berhasil ditambahkan! ✓');
-            }
-            
-            saveToLocalStorage();
-            closeProductFormModal();
-            renderAdminProductList();
-            renderProducts();
-            renderFeaturedProducts();
-        }
-
-        function showDeleteModal(id) {
-            const product = products.find(p => p.id.toString() === id.toString());
-            if (!product) return;
-            
-            deleteProductId = id;
-            document.getElementById('deleteProductName').textContent = `"${product.name}" akan dihapus permanen`;
-            document.getElementById('deleteModal').classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').classList.add('hidden');
-            deleteProductId = null;
-        }
-
-        async function confirmDelete() {
-            if (deleteProductId) {
-                await deleteProductFromFirebase(deleteProductId);
-                products = products.filter(p => p.id.toString() !== deleteProductId.toString());
-                saveToLocalStorage();
-                renderAdminProductList();
-                renderProducts();
-                renderFeaturedProducts();
-                updateCartBadge();
-                showToast('Produk berhasil dihapus! ✓');
-            }
-            closeDeleteModal();
-        }
-
-        // Toast Notification
         function showToast(message) {
             const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            toastMessage.textContent = message;
+            document.getElementById('toastMessage').textContent = message;
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 2500);
         }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            document.getElementById('productImage').addEventListener('input', function() {
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                if (this.value.startsWith('http')) {
+                    img.src = this.value;
+                    preview.classList.remove('hidden');
+                } else {
+                    preview.classList.add('hidden');
+                }
+            });
+            setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 1000);
+        });
     </script>
 </body>
 </html>
