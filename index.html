@@ -173,9 +173,9 @@
 
             <!-- Promo Banner -->
             <div id="promoBanner" class="bg-gradient-to-r from-orange-400 to-orange-500 rounded-2xl p-5 mt-6 text-white relative overflow-hidden">
-                <div class="absolute right-2 bottom-2 opacity-30 text-7xl">🍊</div>
-                <h3 id="promoTitle" class="font-bold text-lg mb-1">Buah Segar Setiap Hari!</h3>
-                <p id="promoSubtitle" class="text-sm opacity-90">Kualitas terbaik untuk keluarga Anda</p>
+                <div id="promoDecor" class="absolute right-2 bottom-2 opacity-30 text-7xl">🍊</div>
+                <h3 id="promoTitle" class="font-bold text-lg mb-1 relative z-10">Buah Segar Setiap Hari!</h3>
+                <p id="promoSubtitle" class="text-sm opacity-90 relative z-10">Kualitas terbaik untuk keluarga Anda</p>
             </div>
         </div>
 
@@ -522,10 +522,11 @@
                                 <input type="text" id="heroEmojiInput" placeholder="🍇" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl" maxlength="2">
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Atau URL Gambar</label>
+                                <label class="text-xs text-gray-500 mb-1 block">Background Gambar (Full)</label>
                                 <input type="url" id="heroImageUrl" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
                             </div>
                         </div>
+                        <p class="text-xs text-gray-400 mb-3">💡 Jika URL gambar diisi, gambar akan menjadi background full banner dan emoji disembunyikan</p>
                         <div class="grid grid-cols-2 gap-3 mb-3">
                             <div>
                                 <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Dari</label>
@@ -571,8 +572,45 @@
                             <label class="text-xs text-gray-500 mb-1 block">Subtitle Promo</label>
                             <input type="text" id="promoSubtitleInput" placeholder="Kualitas terbaik untuk keluarga Anda" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                         </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Emoji Dekorasi</label>
+                                <input type="text" id="promoEmojiInput" placeholder="🍊" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl" maxlength="2">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Background Gambar (Full)</label>
+                                <input type="url" id="promoImageUrl" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3">💡 Jika URL gambar diisi, gambar akan menjadi background full banner dan emoji disembunyikan</p>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Dari</label>
+                                <select id="promoColorFrom" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
+                                    <option value="orange-400">Oranye</option>
+                                    <option value="green-400">Hijau</option>
+                                    <option value="blue-400">Biru</option>
+                                    <option value="purple-400">Ungu</option>
+                                    <option value="red-400">Merah</option>
+                                    <option value="yellow-400">Kuning</option>
+                                    <option value="pink-400">Pink</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Ke</label>
+                                <select id="promoColorTo" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
+                                    <option value="orange-500">Oranye Tua</option>
+                                    <option value="green-500">Hijau Tua</option>
+                                    <option value="blue-500">Biru Tua</option>
+                                    <option value="purple-500">Ungu Tua</option>
+                                    <option value="red-500">Merah Tua</option>
+                                    <option value="yellow-500">Kuning Tua</option>
+                                    <option value="pink-500">Pink Tua</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="promoPreview" class="bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl p-4 text-white relative overflow-hidden">
-                            <div class="absolute right-2 bottom-2 opacity-30 text-5xl">🍊</div>
+                            <div id="promoPreviewDecor" class="absolute right-2 bottom-2 opacity-30 text-5xl">🍊</div>
                             <h4 id="promoPreviewTitle" class="font-bold relative z-10">Buah Segar Setiap Hari!</h4>
                             <p id="promoPreviewSubtitle" class="text-xs opacity-90 relative z-10">Kualitas terbaik untuk keluarga Anda</p>
                         </div>
@@ -933,7 +971,11 @@
             colorFrom: 'green-500',
             colorTo: 'green-600',
             promoTitle: 'Buah Segar Setiap Hari!',
-            promoSubtitle: 'Kualitas terbaik untuk keluarga Anda'
+            promoSubtitle: 'Kualitas terbaik untuk keluarga Anda',
+            promoEmoji: '🍊',
+            promoImageUrl: '',
+            promoColorFrom: 'orange-400',
+            promoColorTo: 'orange-500'
         };
 
         // State Variables
@@ -2568,42 +2610,72 @@
 
         // Hero Settings Functions
         function loadHeroSettingsToForm() {
+            // Hero fields
             document.getElementById('heroTitle').value = heroSettings.title || defaultHeroSettings.title;
             document.getElementById('heroSubtitleInput').value = heroSettings.subtitle || defaultHeroSettings.subtitle;
             document.getElementById('heroEmojiInput').value = heroSettings.emoji || defaultHeroSettings.emoji;
             document.getElementById('heroImageUrl').value = heroSettings.imageUrl || '';
             document.getElementById('heroColorFrom').value = heroSettings.colorFrom || 'green-500';
             document.getElementById('heroColorTo').value = heroSettings.colorTo || 'green-600';
+            
+            // Promo fields
             document.getElementById('promoTitleInput').value = heroSettings.promoTitle || defaultHeroSettings.promoTitle;
             document.getElementById('promoSubtitleInput').value = heroSettings.promoSubtitle || defaultHeroSettings.promoSubtitle;
+            document.getElementById('promoEmojiInput').value = heroSettings.promoEmoji || defaultHeroSettings.promoEmoji;
+            document.getElementById('promoImageUrl').value = heroSettings.promoImageUrl || '';
+            document.getElementById('promoColorFrom').value = heroSettings.promoColorFrom || 'orange-400';
+            document.getElementById('promoColorTo').value = heroSettings.promoColorTo || 'orange-500';
             
             updateHeroPreview();
             
-            // Add event listeners for real-time preview
-            ['heroTitle', 'heroSubtitleInput', 'heroEmojiInput', 'heroImageUrl', 'heroColorFrom', 'heroColorTo', 'promoTitleInput', 'promoSubtitleInput'].forEach(id => {
+            // Add event listeners for real-time preview - Hero
+            ['heroTitle', 'heroSubtitleInput', 'heroEmojiInput', 'heroImageUrl', 'heroColorFrom', 'heroColorTo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', updateHeroPreview);
+            });
+            
+            // Add event listeners for real-time preview - Promo
+            ['promoTitleInput', 'promoSubtitleInput', 'promoEmojiInput', 'promoImageUrl', 'promoColorFrom', 'promoColorTo'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', updateHeroPreview);
             });
         }
 
         function updateHeroPreview() {
+            // Hero values
             const title = document.getElementById('heroTitle').value || defaultHeroSettings.title;
             const subtitle = document.getElementById('heroSubtitleInput').value || defaultHeroSettings.subtitle;
             const emoji = document.getElementById('heroEmojiInput').value || defaultHeroSettings.emoji;
             const imageUrl = document.getElementById('heroImageUrl').value;
             const colorFrom = document.getElementById('heroColorFrom').value || 'green-500';
             const colorTo = document.getElementById('heroColorTo').value || 'green-600';
+            
+            // Promo values
             const promoTitle = document.getElementById('promoTitleInput').value || defaultHeroSettings.promoTitle;
             const promoSubtitle = document.getElementById('promoSubtitleInput').value || defaultHeroSettings.promoSubtitle;
+            const promoEmoji = document.getElementById('promoEmojiInput').value || defaultHeroSettings.promoEmoji;
+            const promoImageUrl = document.getElementById('promoImageUrl').value;
+            const promoColorFrom = document.getElementById('promoColorFrom').value || 'orange-400';
+            const promoColorTo = document.getElementById('promoColorTo').value || 'orange-500';
             
             // Update hero preview
             const heroPreview = document.getElementById('heroPreview');
-            heroPreview.className = `bg-gradient-to-r from-${colorFrom} to-${colorTo} rounded-xl p-4 text-white relative overflow-hidden mb-3`;
-            
             const heroDecor = document.getElementById('heroPreviewDecor');
+            
             if (imageUrl) {
-                heroDecor.innerHTML = `<img src="${imageUrl}" class="w-16 h-16 object-cover rounded-lg opacity-50">`;
+                // Full background image preview
+                heroPreview.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${imageUrl}')`;
+                heroPreview.style.backgroundSize = 'cover';
+                heroPreview.style.backgroundPosition = 'center';
+                heroPreview.className = 'rounded-xl p-4 text-white relative overflow-hidden mb-3 min-h-[100px] flex flex-col justify-center';
+                heroDecor.style.display = 'none';
             } else {
+                // Gradient with emoji
+                heroPreview.style.backgroundImage = '';
+                heroPreview.style.backgroundSize = '';
+                heroPreview.style.backgroundPosition = '';
+                heroPreview.className = `bg-gradient-to-r from-${colorFrom} to-${colorTo} rounded-xl p-4 text-white relative overflow-hidden mb-3`;
+                heroDecor.style.display = 'block';
                 heroDecor.innerHTML = emoji;
             }
             
@@ -2611,20 +2683,46 @@
             document.getElementById('heroPreviewSubtitle').textContent = subtitle;
             
             // Update promo preview
+            const promoPreview = document.getElementById('promoPreview');
+            const promoDecorEl = document.getElementById('promoPreviewDecor');
+            
+            if (promoImageUrl) {
+                // Full background image preview
+                promoPreview.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${promoImageUrl}')`;
+                promoPreview.style.backgroundSize = 'cover';
+                promoPreview.style.backgroundPosition = 'center';
+                promoPreview.className = 'rounded-xl p-4 text-white relative overflow-hidden min-h-[80px] flex flex-col justify-center';
+                promoDecorEl.style.display = 'none';
+            } else {
+                // Gradient with emoji
+                promoPreview.style.backgroundImage = '';
+                promoPreview.style.backgroundSize = '';
+                promoPreview.style.backgroundPosition = '';
+                promoPreview.className = `bg-gradient-to-r from-${promoColorFrom} to-${promoColorTo} rounded-xl p-4 text-white relative overflow-hidden`;
+                promoDecorEl.style.display = 'block';
+                promoDecorEl.textContent = promoEmoji;
+            }
+            
             document.getElementById('promoPreviewTitle').textContent = promoTitle;
             document.getElementById('promoPreviewSubtitle').textContent = promoSubtitle;
         }
 
         async function saveHeroSettings() {
             heroSettings = {
+                // Hero settings
                 title: document.getElementById('heroTitle').value.trim() || defaultHeroSettings.title,
                 subtitle: document.getElementById('heroSubtitleInput').value.trim() || defaultHeroSettings.subtitle,
                 emoji: document.getElementById('heroEmojiInput').value.trim() || defaultHeroSettings.emoji,
                 imageUrl: document.getElementById('heroImageUrl').value.trim(),
                 colorFrom: document.getElementById('heroColorFrom').value || 'green-500',
                 colorTo: document.getElementById('heroColorTo').value || 'green-600',
+                // Promo settings
                 promoTitle: document.getElementById('promoTitleInput').value.trim() || defaultHeroSettings.promoTitle,
-                promoSubtitle: document.getElementById('promoSubtitleInput').value.trim() || defaultHeroSettings.promoSubtitle
+                promoSubtitle: document.getElementById('promoSubtitleInput').value.trim() || defaultHeroSettings.promoSubtitle,
+                promoEmoji: document.getElementById('promoEmojiInput').value.trim() || defaultHeroSettings.promoEmoji,
+                promoImageUrl: document.getElementById('promoImageUrl').value.trim(),
+                promoColorFrom: document.getElementById('promoColorFrom').value || 'orange-400',
+                promoColorTo: document.getElementById('promoColorTo').value || 'orange-500'
             };
             
             localStorage.setItem('varshaHeroSettings', JSON.stringify(heroSettings));
@@ -2634,24 +2732,35 @@
         }
 
         function applyHeroSettings() {
+            // === HERO BANNER ===
             const heroBanner = document.getElementById('heroBanner');
             const heroEmoji = document.getElementById('heroEmoji');
             const heroTitleDisplay = document.getElementById('heroTitleDisplay');
             const heroSubtitleDisplay = document.getElementById('heroSubtitleDisplay');
-            const promoTitleEl = document.getElementById('promoTitle');
-            const promoSubtitleEl = document.getElementById('promoSubtitle');
             
-            // Apply hero banner styles
+            // Apply hero banner styles with background image or gradient
             if (heroBanner) {
-                heroBanner.className = `bg-gradient-to-r from-${heroSettings.colorFrom || 'green-500'} to-${heroSettings.colorTo || 'green-600'} rounded-2xl p-6 mb-6 text-white relative overflow-hidden`;
+                if (heroSettings.imageUrl) {
+                    // Full background image
+                    heroBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${heroSettings.imageUrl}')`;
+                    heroBanner.style.backgroundSize = 'cover';
+                    heroBanner.style.backgroundPosition = 'center';
+                    heroBanner.className = 'rounded-2xl p-6 mb-6 text-white relative overflow-hidden min-h-[180px] flex flex-col justify-center';
+                } else {
+                    // Gradient only
+                    heroBanner.style.backgroundImage = '';
+                    heroBanner.style.backgroundSize = '';
+                    heroBanner.style.backgroundPosition = '';
+                    heroBanner.className = `bg-gradient-to-r from-${heroSettings.colorFrom || 'green-500'} to-${heroSettings.colorTo || 'green-600'} rounded-2xl p-6 mb-6 text-white relative overflow-hidden`;
+                }
             }
             
-            // Apply emoji or image
+            // Apply hero emoji (only show if no image)
             if (heroEmoji) {
                 if (heroSettings.imageUrl) {
-                    heroEmoji.innerHTML = `<img src="${heroSettings.imageUrl}" class="w-24 h-24 object-cover rounded-xl opacity-50">`;
-                    heroEmoji.className = 'absolute right-2 top-2';
+                    heroEmoji.style.display = 'none';
                 } else {
+                    heroEmoji.style.display = 'block';
                     heroEmoji.textContent = heroSettings.emoji || '🍇';
                     heroEmoji.className = 'absolute right-0 top-0 opacity-20 text-9xl';
                 }
@@ -2661,7 +2770,41 @@
             if (heroTitleDisplay) heroTitleDisplay.textContent = heroSettings.title || defaultHeroSettings.title;
             if (heroSubtitleDisplay) heroSubtitleDisplay.textContent = heroSettings.subtitle || defaultHeroSettings.subtitle;
             
-            // Apply promo banner
+            // === PROMO BANNER ===
+            const promoBanner = document.getElementById('promoBanner');
+            const promoDecor = document.getElementById('promoDecor');
+            const promoTitleEl = document.getElementById('promoTitle');
+            const promoSubtitleEl = document.getElementById('promoSubtitle');
+            
+            // Apply promo banner styles with background image or gradient
+            if (promoBanner) {
+                if (heroSettings.promoImageUrl) {
+                    // Full background image
+                    promoBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${heroSettings.promoImageUrl}')`;
+                    promoBanner.style.backgroundSize = 'cover';
+                    promoBanner.style.backgroundPosition = 'center';
+                    promoBanner.className = 'rounded-2xl p-5 mt-6 text-white relative overflow-hidden min-h-[120px] flex flex-col justify-center';
+                } else {
+                    // Gradient only
+                    promoBanner.style.backgroundImage = '';
+                    promoBanner.style.backgroundSize = '';
+                    promoBanner.style.backgroundPosition = '';
+                    promoBanner.className = `bg-gradient-to-r from-${heroSettings.promoColorFrom || 'orange-400'} to-${heroSettings.promoColorTo || 'orange-500'} rounded-2xl p-5 mt-6 text-white relative overflow-hidden`;
+                }
+            }
+            
+            // Apply promo emoji (only show if no image)
+            if (promoDecor) {
+                if (heroSettings.promoImageUrl) {
+                    promoDecor.style.display = 'none';
+                } else {
+                    promoDecor.style.display = 'block';
+                    promoDecor.textContent = heroSettings.promoEmoji || '🍊';
+                    promoDecor.className = 'absolute right-2 bottom-2 opacity-30 text-7xl';
+                }
+            }
+            
+            // Apply promo title and subtitle
             if (promoTitleEl) promoTitleEl.textContent = heroSettings.promoTitle || defaultHeroSettings.promoTitle;
             if (promoSubtitleEl) promoSubtitleEl.textContent = heroSettings.promoSubtitle || defaultHeroSettings.promoSubtitle;
         }
