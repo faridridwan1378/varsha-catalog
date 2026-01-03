@@ -863,9 +863,14 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
     </div>
 
     <!-- Product Modal -->
-    <div id="productModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-end justify-center">
+    <div id="productModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-end justify-center" onclick="if(event.target === this) closeModal()">
         <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
-            <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+            <div class="flex justify-between items-center mb-4">
+                <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+                <button onclick="closeModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition">
+                    <i class="fas fa-times text-gray-600"></i>
+                </button>
+            </div>
             <div id="modalContent"></div>
         </div>
     </div>
