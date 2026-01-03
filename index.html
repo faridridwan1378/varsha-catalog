@@ -389,6 +389,41 @@
                         </button>
                     </div>
 
+                    <!-- Bulk Upload Section -->
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-file-import text-purple-500"></i> Upload Produk Massal
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-3">Upload banyak produk sekaligus dari Excel atau copy-paste data</p>
+                        
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Format: Nama | Harga | Satuan | Kategori | URL Gambar | Deskripsi</label>
+                            <textarea id="bulkProductData" rows="4" placeholder="Contoh:
+Apel Fuji	45000	kg	Buah	https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400	Apel segar import
+Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-42782101795e?w=400	Jeruk manis tanpa biji" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono resize-none"></textarea>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="importFromExcel()" class="flex-1 bg-purple-500 text-white py-2 rounded-xl font-medium text-sm hover:bg-purple-600 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-file-excel"></i> Import Excel
+                            </button>
+                            <button onclick="processBulkUpload()" class="flex-1 bg-green-500 text-white py-2 rounded-xl font-medium text-sm hover:bg-green-600 transition flex items-center justify-center gap-2">
+                                <i class="fas fa-upload"></i> Upload Produk
+                            </button>
+                        </div>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelFile(event)">
+                        
+                        <div class="mt-3 p-3 bg-gray-50 rounded-xl">
+                            <p class="text-xs text-gray-600 font-medium mb-1">📋 Panduan Format:</p>
+                            <ul class="text-xs text-gray-500 space-y-0.5">
+                                <li>• Pisahkan kolom dengan <strong>Tab</strong> atau copy langsung dari Excel</li>
+                                <li>• Kategori: <strong>Buah, Sayuran, Bumbu, Lainnya</strong></li>
+                                <li>• Harga dalam angka tanpa titik/koma (contoh: 45000)</li>
+                                <li>• URL gambar harus dimulai dengan https://</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-2xl shadow-lg p-4">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-gray-800">
@@ -498,6 +533,26 @@
                         </button>
                         <button onclick="downloadFromFirebase()" class="w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition">
                             <i class="fas fa-cloud-download-alt mr-2"></i>Download dari Firebase
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-trash-alt text-red-500"></i> Hapus Data
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-3">⚠️ Hati-hati! Data yang dihapus tidak dapat dikembalikan.</p>
+                        
+                        <button onclick="deleteAllProducts()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
+                            <i class="fas fa-box"></i> Hapus Semua Produk
+                        </button>
+                        <button onclick="deleteAllOrders()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
+                            <i class="fas fa-clipboard-list"></i> Hapus Semua Pesanan
+                        </button>
+                        <button onclick="deleteAllCustomers()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
+                            <i class="fas fa-users"></i> Hapus Semua Customer
+                        </button>
+                        <button onclick="deleteAllData()" class="w-full bg-red-500 text-white py-2 rounded-xl font-medium hover:bg-red-600 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-trash"></i> Hapus SEMUA Data
                         </button>
                     </div>
                 </div>
@@ -893,6 +948,31 @@
             <div class="flex gap-3">
                 <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200">Batal</button>
                 <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Confirmation Modal -->
+    <div id="confirmModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 text-center">
+            <div id="confirmIcon" class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+            </div>
+            <h3 id="confirmTitle" class="text-xl font-bold text-gray-800 mb-3">Konfirmasi</h3>
+            <div id="confirmMessage" class="text-gray-600 mb-6 text-left bg-gray-50 rounded-xl p-4"></div>
+            <div id="confirmWarning" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-left">
+                <div class="flex items-start gap-2">
+                    <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+                    <p id="confirmWarningText" class="text-sm text-red-700"></p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
+                    <i class="fas fa-times mr-2"></i>Batal
+                </button>
+                <button id="confirmBtn" onclick="" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">
+                    <i class="fas fa-check mr-2"></i>Ya, Lanjutkan
+                </button>
             </div>
         </div>
     </div>
@@ -2211,6 +2291,49 @@
             deleteProductId = null;
         }
 
+        // General Confirmation Modal Functions
+        let confirmCallback = null;
+
+        function showConfirmModal(options) {
+            const { title, message, warning, icon, iconBg, btnText, btnClass, onConfirm } = options;
+            
+            document.getElementById('confirmTitle').textContent = title || 'Konfirmasi';
+            document.getElementById('confirmMessage').innerHTML = message || '';
+            
+            const iconEl = document.getElementById('confirmIcon');
+            iconEl.className = `w-20 h-20 ${iconBg || 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`;
+            iconEl.innerHTML = `<i class="${icon || 'fas fa-exclamation-triangle'} ${iconBg ? 'text-' + iconBg.replace('bg-', '').replace('-100', '-500') : 'text-red-500'} text-3xl"></i>`;
+            
+            const warningEl = document.getElementById('confirmWarning');
+            if (warning) {
+                warningEl.classList.remove('hidden');
+                document.getElementById('confirmWarningText').textContent = warning;
+            } else {
+                warningEl.classList.add('hidden');
+            }
+            
+            const btn = document.getElementById('confirmBtn');
+            btn.className = `flex-1 ${btnClass || 'bg-red-500 hover:bg-red-600'} text-white py-3 rounded-xl font-semibold transition`;
+            btn.innerHTML = `<i class="fas fa-check mr-2"></i>${btnText || 'Ya, Lanjutkan'}`;
+            
+            confirmCallback = onConfirm;
+            btn.onclick = executeConfirm;
+            
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        async function executeConfirm() {
+            if (confirmCallback) {
+                closeConfirmModal();
+                await confirmCallback();
+            }
+        }
+
         async function confirmDelete() {
             if (deleteProductId) {
                 await deleteFromFirebase('products', deleteProductId.toString());
@@ -2864,6 +2987,325 @@
             renderAll();
             applyHeroSettings();
             showToast('Data berhasil direset ke default! ✓');
+        }
+
+        // Bulk Upload Functions
+        function importFromExcel() {
+            document.getElementById('excelFileInput').click();
+        }
+
+        function handleExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // Skip header row if it looks like headers
+                    let startRow = 0;
+                    if (jsonData.length > 0) {
+                        const firstRow = jsonData[0];
+                        if (firstRow[0] && (firstRow[0].toString().toLowerCase().includes('nama') || firstRow[0].toString().toLowerCase().includes('name'))) {
+                            startRow = 1;
+                        }
+                    }
+                    
+                    // Convert to tab-separated text
+                    const textData = jsonData.slice(startRow)
+                        .filter(row => row.length >= 4 && row[0]) // At least 4 columns and has name
+                        .map(row => row.join('\t'))
+                        .join('\n');
+                    
+                    document.getElementById('bulkProductData').value = textData;
+                    showToast(`${jsonData.length - startRow} baris data dimuat dari Excel`);
+                } catch (error) {
+                    console.error('Excel parse error:', error);
+                    showToast('Gagal membaca file Excel!');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // Reset input
+        }
+
+        async function processBulkUpload() {
+            const textData = document.getElementById('bulkProductData').value.trim();
+            if (!textData) {
+                showToast('Data produk kosong!');
+                return;
+            }
+
+            const lines = textData.split('\n').filter(line => line.trim());
+            if (lines.length === 0) {
+                showToast('Tidak ada data untuk diupload!');
+                return;
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+            const newProducts = [];
+
+            // Get next ID
+            let nextId = products.length > 0 ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
+
+            for (const line of lines) {
+                // Split by tab or multiple spaces
+                const cols = line.split(/\t/).map(c => c.trim());
+                
+                if (cols.length < 4) {
+                    errorCount++;
+                    continue;
+                }
+
+                const [name, priceStr, unit, category, image, desc] = cols;
+                const price = parseInt(priceStr.replace(/\D/g, ''));
+
+                if (!name || !price || !unit || !category) {
+                    errorCount++;
+                    continue;
+                }
+
+                // Validate category
+                const validCategories = ['Buah', 'Sayuran', 'Bumbu', 'Lainnya'];
+                const normalizedCategory = validCategories.find(c => 
+                    c.toLowerCase() === category.toLowerCase()
+                ) || 'Lainnya';
+
+                const newProduct = {
+                    id: nextId.toString(),
+                    name: name,
+                    price: price,
+                    unit: unit,
+                    category: normalizedCategory,
+                    image: image || 'https://via.placeholder.com/400x300?text=' + encodeURIComponent(name),
+                    desc: desc || name
+                };
+
+                newProducts.push(newProduct);
+                nextId++;
+                successCount++;
+            }
+
+            if (newProducts.length === 0) {
+                showToast('Tidak ada produk valid untuk diupload!');
+                return;
+            }
+
+            // Add to products array and save to Firebase
+            showToast(`Mengupload ${newProducts.length} produk...`);
+            
+            for (const p of newProducts) {
+                products.push(p);
+                await saveToFirebase('products', p.id, {
+                    name: p.name,
+                    price: p.price,
+                    unit: p.unit,
+                    category: p.category,
+                    image: p.image,
+                    desc: p.desc
+                });
+            }
+
+            // Clear textarea
+            document.getElementById('bulkProductData').value = '';
+
+            // Update UI
+            renderAdminProductList();
+            renderProducts();
+            renderFeaturedProducts();
+
+            showToast(`✓ ${successCount} produk berhasil diupload!${errorCount > 0 ? ` (${errorCount} gagal)` : ''}`);
+        }
+
+        // Delete Data Functions
+        async function deleteAllProducts() {
+            showConfirmModal({
+                title: '🗑️ Hapus Semua Produk?',
+                message: `
+                    <div class="space-y-2">
+                        <p class="font-medium text-gray-800">Anda akan menghapus:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li><strong>${products.length} produk</strong> dari katalog</li>
+                            <li>Data produk di Firebase</li>
+                        </ul>
+                    </div>
+                `,
+                warning: 'Data yang dihapus tidak dapat dikembalikan!',
+                icon: 'fas fa-box',
+                iconBg: 'bg-orange-100',
+                btnText: 'Hapus Produk',
+                btnClass: 'bg-red-500 hover:bg-red-600',
+                onConfirm: async () => {
+                    showToast('Menghapus produk...');
+                    try {
+                        if (db && isFirebaseConnected) {
+                            for (const p of products) {
+                                await db.collection('products').doc(p.id.toString()).delete();
+                            }
+                        }
+                        products = [];
+                        localStorage.removeItem('varshaProducts');
+                        renderProducts();
+                        renderFeaturedProducts();
+                        renderAdminProductList();
+                        showToast('✓ Semua produk berhasil dihapus!');
+                    } catch (e) {
+                        console.error('Delete products error:', e);
+                        showToast('Gagal menghapus: ' + e.message);
+                    }
+                }
+            });
+        }
+
+        async function deleteAllOrders() {
+            showConfirmModal({
+                title: '🗑️ Hapus Semua Pesanan?',
+                message: `
+                    <div class="space-y-2">
+                        <p class="font-medium text-gray-800">Anda akan menghapus:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li><strong>${orders.length} pesanan</strong> dari database</li>
+                            <li>Riwayat semua transaksi</li>
+                        </ul>
+                    </div>
+                `,
+                warning: 'Semua riwayat pesanan akan hilang permanen!',
+                icon: 'fas fa-clipboard-list',
+                iconBg: 'bg-blue-100',
+                btnText: 'Hapus Pesanan',
+                btnClass: 'bg-red-500 hover:bg-red-600',
+                onConfirm: async () => {
+                    showToast('Menghapus pesanan...');
+                    try {
+                        if (db && isFirebaseConnected) {
+                            for (const o of orders) {
+                                await db.collection('orders').doc(o.id).delete();
+                            }
+                        }
+                        orders = [];
+                        renderAdminOrders();
+                        renderCustomerOrders();
+                        updateOrderBadge();
+                        showToast('✓ Semua pesanan berhasil dihapus!');
+                    } catch (e) {
+                        console.error('Delete orders error:', e);
+                        showToast('Gagal menghapus: ' + e.message);
+                    }
+                }
+            });
+        }
+
+        async function deleteAllCustomers() {
+            showConfirmModal({
+                title: '🗑️ Hapus Semua Customer?',
+                message: `
+                    <div class="space-y-2">
+                        <p class="font-medium text-gray-800">Anda akan menghapus:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li><strong>${customers.length} customer</strong> dari database</li>
+                            <li>Semua data pelanggan terdaftar</li>
+                            <li>Semua keranjang belanja</li>
+                        </ul>
+                    </div>
+                `,
+                warning: 'Customer yang sudah terdaftar harus mendaftar ulang!',
+                icon: 'fas fa-users',
+                iconBg: 'bg-purple-100',
+                btnText: 'Hapus Customer',
+                btnClass: 'bg-red-500 hover:bg-red-600',
+                onConfirm: async () => {
+                    showToast('Menghapus customer...');
+                    try {
+                        if (db && isFirebaseConnected) {
+                            for (const c of customers) {
+                                await db.collection('customers').doc(c.id).delete();
+                            }
+                        }
+                        customers = [];
+                        currentCustomer = null;
+                        localStorage.removeItem('varshaCurrentCustomer');
+                        localStorage.removeItem('varshaCarts');
+                        renderAdminCustomers();
+                        updateCustomerBar();
+                        renderCart();
+                        showToast('✓ Semua customer berhasil dihapus!');
+                    } catch (e) {
+                        console.error('Delete customers error:', e);
+                        showToast('Gagal menghapus: ' + e.message);
+                    }
+                }
+            });
+        }
+
+        async function deleteAllData() {
+            showConfirmModal({
+                title: '⚠️ HAPUS SEMUA DATA?',
+                message: `
+                    <div class="space-y-3">
+                        <p class="font-medium text-gray-800">Anda akan menghapus SEMUA data:</p>
+                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-center gap-2">
+                                    <span class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-box text-orange-500 text-xs"></i>
+                                    </span>
+                                    <span><strong>${products.length}</strong> Produk</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-clipboard-list text-blue-500 text-xs"></i>
+                                    </span>
+                                    <span><strong>${orders.length}</strong> Pesanan</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-users text-purple-500 text-xs"></i>
+                                    </span>
+                                    <span><strong>${customers.length}</strong> Customer</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <p class="text-xs text-gray-500">* Pengaturan toko akan tetap tersimpan</p>
+                    </div>
+                `,
+                warning: 'PERINGATAN: Tindakan ini TIDAK DAPAT dibatalkan! Semua data akan hilang secara permanen.',
+                icon: 'fas fa-exclamation-triangle',
+                iconBg: 'bg-red-100',
+                btnText: 'HAPUS SEMUA',
+                btnClass: 'bg-red-600 hover:bg-red-700',
+                onConfirm: async () => {
+                    showToast('Menghapus semua data...');
+                    try {
+                        if (db && isFirebaseConnected) {
+                            for (const p of products) {
+                                await db.collection('products').doc(p.id.toString()).delete();
+                            }
+                            for (const o of orders) {
+                                await db.collection('orders').doc(o.id).delete();
+                            }
+                            for (const c of customers) {
+                                await db.collection('customers').doc(c.id).delete();
+                            }
+                        }
+                        localStorage.clear();
+                        products = [];
+                        orders = [];
+                        customers = [];
+                        currentCustomer = null;
+                        renderAll();
+                        updateCustomerBar();
+                        showToast('✓ Semua data berhasil dihapus!');
+                        setTimeout(() => location.reload(), 1500);
+                    } catch (e) {
+                        console.error('Delete all data error:', e);
+                        showToast('Gagal menghapus: ' + e.message);
+                    }
+                }
+            });
         }
 
         // Navigation
