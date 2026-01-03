@@ -516,48 +516,25 @@
                             <label class="text-xs text-gray-500 mb-1 block">Subtitle Hero</label>
                             <input type="text" id="heroSubtitleInput" placeholder="Buah segar & berkualitas..." class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                         </div>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Emoji Dekorasi</label>
-                                <input type="text" id="heroEmojiInput" placeholder="🍇" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl" maxlength="2">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Background Gambar (Full)</label>
-                                <input type="url" id="heroImageUrl" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Background Gambar (Full)</label>
+                            <input type="url" id="heroImageUrl" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-500 mb-1 block">Dark Overlay: <span id="heroOverlayValue">40</span>%</label>
+                            <input type="range" id="heroOverlay" min="0" max="80" value="40" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>Terang</span>
+                                <span>Gelap</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 mb-3">💡 Jika URL gambar diisi, gambar akan menjadi background full banner dan emoji disembunyikan</p>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Dari</label>
-                                <select id="heroColorFrom" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
-                                    <option value="green-500">Hijau</option>
-                                    <option value="orange-500">Oranye</option>
-                                    <option value="blue-500">Biru</option>
-                                    <option value="purple-500">Ungu</option>
-                                    <option value="red-500">Merah</option>
-                                    <option value="yellow-500">Kuning</option>
-                                    <option value="pink-500">Pink</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">Warna Gradient Ke</label>
-                                <select id="heroColorTo" class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
-                                    <option value="green-600">Hijau Tua</option>
-                                    <option value="orange-600">Oranye Tua</option>
-                                    <option value="blue-600">Biru Tua</option>
-                                    <option value="purple-600">Ungu Tua</option>
-                                    <option value="red-600">Merah Tua</option>
-                                    <option value="yellow-600">Kuning Tua</option>
-                                    <option value="pink-600">Pink Tua</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="heroPreview" class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white relative overflow-hidden mb-3">
+                        <p class="text-xs text-gray-400 mb-3">💡 Masukkan URL gambar untuk background full banner. Atur Dark Overlay agar teks tetap terbaca.</p>
+                        <div id="heroPreview" class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white relative overflow-hidden mb-3 min-h-[100px] flex flex-col justify-center">
                             <div id="heroPreviewDecor" class="absolute right-0 top-0 opacity-20 text-6xl">🍇</div>
                             <h4 id="heroPreviewTitle" class="font-bold text-lg relative z-10">Selamat Datang! 👋</h4>
                             <p id="heroPreviewSubtitle" class="text-xs opacity-90 relative z-10">Buah segar & berkualitas</p>
                         </div>
+                        <p class="text-xs text-gray-400">⚠️ Jika tidak ada gambar, akan menggunakan gradient hijau default dengan emoji 🍇</p>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
@@ -938,22 +915,33 @@
 
         // Default Products
         const defaultProducts = [
-            { id: 1, name: "Apel Fuji Premium", price: 45000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import dari Jepang" },
-            { id: 2, name: "Jeruk Mandarin", price: 38000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji" },
-            { id: 3, name: "Mangga Harum Manis", price: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga lokal pilihan super manis" },
-            { id: 4, name: "Anggur Red Globe", price: 75000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah segar dan manis" },
-            { id: 5, name: "Pisang Cavendish", price: 28000, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang premium kualitas ekspor" },
-            { id: 6, name: "Semangka Merah", price: 25000, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah tanpa biji" },
-            { id: 7, name: "Bayam Organik", price: 8000, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam segar organik bebas pestisida" },
-            { id: 8, name: "Brokoli Segar", price: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar dan renyah" },
-            { id: 9, name: "Wortel Import", price: 15000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel manis import Australia" },
-            { id: 10, name: "Tomat Cherry", price: 22000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry manis untuk salad" },
-            { id: 11, name: "Cabai Merah Keriting", price: 45000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas segar" },
-            { id: 12, name: "Bawang Merah", price: 35000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan" },
-            { id: 13, name: "Bawang Putih", price: 40000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import kualitas super" },
-            { id: 14, name: "Jahe Emprit", price: 30000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe emprit segar untuk jamu" },
-            { id: 15, name: "Madu Murni", price: 85000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml" },
-            { id: 16, name: "Telur Kampung", price: 48000, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik 30 butir" }
+            // BUAH (8 produk)
+            { id: 1, name: "Apel Fuji Premium", price: 45000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import dari Jepang, manis dan renyah" },
+            { id: 2, name: "Jeruk Mandarin", price: 38000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji, kaya vitamin C" },
+            { id: 3, name: "Mangga Harum Manis", price: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga lokal pilihan super manis dan harum" },
+            { id: 4, name: "Anggur Red Globe", price: 75000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah segar import, manis dan berair" },
+            { id: 5, name: "Pisang Cavendish", price: 28000, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang premium kualitas ekspor, matang sempurna" },
+            { id: 6, name: "Semangka Merah", price: 35000, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah tanpa biji, segar dan manis" },
+            { id: 7, name: "Strawberry Fresh", price: 55000, unit: "pack", category: "Buah", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400", desc: "Strawberry segar dari dataran tinggi, manis asam segar" },
+            { id: 8, name: "Alpukat Mentega", price: 40000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400", desc: "Alpukat mentega super lembut, cocok untuk jus" },
+            
+            // SAYURAN (6 produk)
+            { id: 9, name: "Bayam Organik", price: 8000, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam segar organik bebas pestisida" },
+            { id: 10, name: "Brokoli Segar", price: 22000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar dan renyah, kaya nutrisi" },
+            { id: 11, name: "Wortel Import", price: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel manis import Australia, bagus untuk jus" },
+            { id: 12, name: "Tomat Cherry", price: 25000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry manis untuk salad dan garnish" },
+            { id: 13, name: "Selada Romaine", price: 15000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400", desc: "Selada romaine segar untuk salad sehat" },
+            { id: 14, name: "Paprika Mix", price: 35000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400", desc: "Paprika merah, kuning, hijau segar dan renyah" },
+            
+            // BUMBU (4 produk)
+            { id: 15, name: "Cabai Merah Keriting", price: 55000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas segar pilihan" },
+            { id: 16, name: "Bawang Merah", price: 38000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan, aroma kuat" },
+            { id: 17, name: "Bawang Putih", price: 45000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import kualitas super" },
+            { id: 18, name: "Jahe Merah", price: 35000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe merah segar untuk jamu dan masakan" },
+            
+            // LAINNYA (2 produk)
+            { id: 19, name: "Madu Hutan Murni", price: 95000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml, kualitas premium" },
+            { id: 20, name: "Telur Ayam Kampung", price: 52000, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik 30 butir, lebih sehat" }
         ];
 
         const defaultStoreProfile = {
@@ -966,10 +954,8 @@
         const defaultHeroSettings = {
             title: 'Selamat Datang! 👋',
             subtitle: 'Buah segar & berkualitas langsung dari kebun ke rumah Anda',
-            emoji: '🍇',
             imageUrl: '',
-            colorFrom: 'green-500',
-            colorTo: 'green-600',
+            overlay: 40,
             promoTitle: 'Buah Segar Setiap Hari!',
             promoSubtitle: 'Kualitas terbaik untuk keluarga Anda',
             promoEmoji: '🍊',
@@ -2613,10 +2599,9 @@
             // Hero fields
             document.getElementById('heroTitle').value = heroSettings.title || defaultHeroSettings.title;
             document.getElementById('heroSubtitleInput').value = heroSettings.subtitle || defaultHeroSettings.subtitle;
-            document.getElementById('heroEmojiInput').value = heroSettings.emoji || defaultHeroSettings.emoji;
             document.getElementById('heroImageUrl').value = heroSettings.imageUrl || '';
-            document.getElementById('heroColorFrom').value = heroSettings.colorFrom || 'green-500';
-            document.getElementById('heroColorTo').value = heroSettings.colorTo || 'green-600';
+            document.getElementById('heroOverlay').value = heroSettings.overlay || 40;
+            document.getElementById('heroOverlayValue').textContent = heroSettings.overlay || 40;
             
             // Promo fields
             document.getElementById('promoTitleInput').value = heroSettings.promoTitle || defaultHeroSettings.promoTitle;
@@ -2629,10 +2614,19 @@
             updateHeroPreview();
             
             // Add event listeners for real-time preview - Hero
-            ['heroTitle', 'heroSubtitleInput', 'heroEmojiInput', 'heroImageUrl', 'heroColorFrom', 'heroColorTo'].forEach(id => {
+            ['heroTitle', 'heroSubtitleInput', 'heroImageUrl'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', updateHeroPreview);
             });
+            
+            // Hero overlay slider
+            const heroOverlaySlider = document.getElementById('heroOverlay');
+            if (heroOverlaySlider) {
+                heroOverlaySlider.addEventListener('input', function() {
+                    document.getElementById('heroOverlayValue').textContent = this.value;
+                    updateHeroPreview();
+                });
+            }
             
             // Add event listeners for real-time preview - Promo
             ['promoTitleInput', 'promoSubtitleInput', 'promoEmojiInput', 'promoImageUrl', 'promoColorFrom', 'promoColorTo'].forEach(id => {
@@ -2645,10 +2639,9 @@
             // Hero values
             const title = document.getElementById('heroTitle').value || defaultHeroSettings.title;
             const subtitle = document.getElementById('heroSubtitleInput').value || defaultHeroSettings.subtitle;
-            const emoji = document.getElementById('heroEmojiInput').value || defaultHeroSettings.emoji;
             const imageUrl = document.getElementById('heroImageUrl').value;
-            const colorFrom = document.getElementById('heroColorFrom').value || 'green-500';
-            const colorTo = document.getElementById('heroColorTo').value || 'green-600';
+            const overlay = parseInt(document.getElementById('heroOverlay').value) || 40;
+            const overlayOpacity = overlay / 100;
             
             // Promo values
             const promoTitle = document.getElementById('promoTitleInput').value || defaultHeroSettings.promoTitle;
@@ -2663,20 +2656,20 @@
             const heroDecor = document.getElementById('heroPreviewDecor');
             
             if (imageUrl) {
-                // Full background image preview
-                heroPreview.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${imageUrl}')`;
+                // Full background image with dark overlay
+                heroPreview.style.backgroundImage = `linear-gradient(rgba(0,0,0,${overlayOpacity}), rgba(0,0,0,${overlayOpacity})), url('${imageUrl}')`;
                 heroPreview.style.backgroundSize = 'cover';
                 heroPreview.style.backgroundPosition = 'center';
                 heroPreview.className = 'rounded-xl p-4 text-white relative overflow-hidden mb-3 min-h-[100px] flex flex-col justify-center';
                 heroDecor.style.display = 'none';
             } else {
-                // Gradient with emoji
+                // Default gradient (green) when no image
                 heroPreview.style.backgroundImage = '';
                 heroPreview.style.backgroundSize = '';
                 heroPreview.style.backgroundPosition = '';
-                heroPreview.className = `bg-gradient-to-r from-${colorFrom} to-${colorTo} rounded-xl p-4 text-white relative overflow-hidden mb-3`;
+                heroPreview.className = 'bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white relative overflow-hidden mb-3';
                 heroDecor.style.display = 'block';
-                heroDecor.innerHTML = emoji;
+                heroDecor.innerHTML = '🍇';
             }
             
             document.getElementById('heroPreviewTitle').textContent = title;
@@ -2712,10 +2705,8 @@
                 // Hero settings
                 title: document.getElementById('heroTitle').value.trim() || defaultHeroSettings.title,
                 subtitle: document.getElementById('heroSubtitleInput').value.trim() || defaultHeroSettings.subtitle,
-                emoji: document.getElementById('heroEmojiInput').value.trim() || defaultHeroSettings.emoji,
                 imageUrl: document.getElementById('heroImageUrl').value.trim(),
-                colorFrom: document.getElementById('heroColorFrom').value || 'green-500',
-                colorTo: document.getElementById('heroColorTo').value || 'green-600',
+                overlay: parseInt(document.getElementById('heroOverlay').value) || 40,
                 // Promo settings
                 promoTitle: document.getElementById('promoTitleInput').value.trim() || defaultHeroSettings.promoTitle,
                 promoSubtitle: document.getElementById('promoSubtitleInput').value.trim() || defaultHeroSettings.promoSubtitle,
@@ -2738,20 +2729,22 @@
             const heroTitleDisplay = document.getElementById('heroTitleDisplay');
             const heroSubtitleDisplay = document.getElementById('heroSubtitleDisplay');
             
+            const overlay = (heroSettings.overlay || 40) / 100;
+            
             // Apply hero banner styles with background image or gradient
             if (heroBanner) {
                 if (heroSettings.imageUrl) {
-                    // Full background image
-                    heroBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${heroSettings.imageUrl}')`;
+                    // Full background image with dark overlay
+                    heroBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${overlay})), url('${heroSettings.imageUrl}')`;
                     heroBanner.style.backgroundSize = 'cover';
                     heroBanner.style.backgroundPosition = 'center';
                     heroBanner.className = 'rounded-2xl p-6 mb-6 text-white relative overflow-hidden min-h-[180px] flex flex-col justify-center';
                 } else {
-                    // Gradient only
+                    // Default gradient (green) when no image
                     heroBanner.style.backgroundImage = '';
                     heroBanner.style.backgroundSize = '';
                     heroBanner.style.backgroundPosition = '';
-                    heroBanner.className = `bg-gradient-to-r from-${heroSettings.colorFrom || 'green-500'} to-${heroSettings.colorTo || 'green-600'} rounded-2xl p-6 mb-6 text-white relative overflow-hidden`;
+                    heroBanner.className = 'bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 mb-6 text-white relative overflow-hidden';
                 }
             }
             
@@ -2761,7 +2754,7 @@
                     heroEmoji.style.display = 'none';
                 } else {
                     heroEmoji.style.display = 'block';
-                    heroEmoji.textContent = heroSettings.emoji || '🍇';
+                    heroEmoji.textContent = '🍇';
                     heroEmoji.className = 'absolute right-0 top-0 opacity-20 text-9xl';
                 }
             }
