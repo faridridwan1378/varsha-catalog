@@ -1,3 +1,37 @@
+Varsha Catalog
+🔐 Firebase Authentication
+Login admin dengan Email + Password (bukan PIN lagi)
+Session management oleh Firebase
+Auto-login jika sudah login sebelumnya
+Logout aman
+👤 Sistem Customer
+Registrasi dengan Nama, HP, Alamat
+Login dengan nomor HP
+Keranjang terpisah per customer
+Normalisasi HP (628xx = 08xx = 8xx)
+📦 Sistem Order
+Kirim order → Notifikasi WhatsApp ke admin
+Status: Menunggu → Dikonfirmasi → Dikirim → Selesai
+Admin tambah ongkir dan konfirmasi
+🔧 Panel Admin (8 Tab)
+Pesanan - Kelola order, filter status
+Customers - Daftar + hapus customer
+Katalog - CRUD produk + Bulk Upload Excel
+Toko - Logo, profil, sosmed, rekening
+Pengaturan - WA admin, sync data
+Report - Export Excel (pesanan, customer, produk)
+Hero - Banner utama + Promo
+Firebase - Konfigurasi
+📊 Export Excel
+Laporan pesanan (dengan filter)
+Data customer
+Data produk
+Semua data sekaligus
+🎨 Hero & Promo
+Background image + Dark Overlay
+Gradient warna + Emoji
+Preview realtime
+
 # 🔥 Panduan Lengkap Setting Firebase untuk Varsha Catalog
 
 Panduan ini menjelaskan langkah demi langkah cara menghubungkan katalog Varsha dengan Firebase Firestore untuk menyimpan data produk dan pengaturan toko secara online.
