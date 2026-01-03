@@ -536,25 +536,6 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-trash-alt text-red-500"></i> Hapus Data
-                        </h3>
-                        <p class="text-xs text-gray-500 mb-3">⚠️ Hati-hati! Data yang dihapus tidak dapat dikembalikan.</p>
-                        
-                        <button onclick="deleteAllProducts()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
-                            <i class="fas fa-box"></i> Hapus Semua Produk
-                        </button>
-                        <button onclick="deleteAllOrders()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
-                            <i class="fas fa-clipboard-list"></i> Hapus Semua Pesanan
-                        </button>
-                        <button onclick="deleteAllCustomers()" class="w-full bg-red-100 text-red-600 py-2 rounded-xl font-medium hover:bg-red-200 transition mb-2 flex items-center justify-center gap-2">
-                            <i class="fas fa-users"></i> Hapus Semua Customer
-                        </button>
-                        <button onclick="deleteAllData()" class="w-full bg-red-500 text-white py-2 rounded-xl font-medium hover:bg-red-600 transition flex items-center justify-center gap-2">
-                            <i class="fas fa-trash"></i> Hapus SEMUA Data
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Hero Tab -->
@@ -2192,11 +2173,99 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                         <p class="text-xs text-gray-500">${formatPhoneDisplay(c.phone)}</p>
                         <p class="text-xs text-gray-400 truncate">${c.address}</p>
                     </div>
-                    <button onclick="chatCustomer('62${normalizePhone(c.phone)}', '')" class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200">
-                        <i class="fab fa-whatsapp text-sm"></i>
-                    </button>
+                    <div class="flex gap-1">
+                        <button onclick="chatCustomer('62${normalizePhone(c.phone)}', '')" class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200" title="Chat WhatsApp">
+                            <i class="fab fa-whatsapp text-sm"></i>
+                        </button>
+                        <button onclick="deleteCustomer('${c.id}')" class="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200" title="Hapus Customer">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        // Delete individual customer
+        async function deleteCustomer(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) {
+                showToast('Customer tidak ditemukan!');
+                return;
+            }
+
+            // Count related orders
+            const customerPhone = normalizePhone(customer.phone);
+            const relatedOrders = orders.filter(o => normalizePhone(o.customerPhone) === customerPhone);
+
+            showConfirmModal({
+                title: '🗑️ Hapus Customer?',
+                message: `
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-xl">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">${customer.name}</p>
+                                <p class="text-sm text-gray-600">${formatPhoneDisplay(customer.phone)}</p>
+                                <p class="text-xs text-gray-500">${customer.address || '-'}</p>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p class="font-medium mb-1">Data yang akan dihapus:</p>
+                            <ul class="list-disc list-inside space-y-1 text-gray-500">
+                                <li>Akun customer ini</li>
+                                <li><strong>${relatedOrders.length}</strong> pesanan terkait</li>
+                                <li>Keranjang belanja</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                warning: 'Customer yang dihapus tidak dapat dikembalikan!',
+                icon: 'fas fa-user-times',
+                iconBg: 'bg-red-100',
+                btnText: 'Ya, Hapus',
+                btnClass: 'bg-red-500 hover:bg-red-600',
+                onConfirm: async () => {
+                    showToast('Menghapus customer...');
+                    
+                    try {
+                        // Delete from Firebase
+                        if (db && isFirebaseConnected) {
+                            // Delete customer document
+                            await db.collection('customers').doc(customerId).delete();
+                            console.log('Customer deleted from Firebase:', customerId);
+                            
+                            // Delete related orders
+                            for (const o of relatedOrders) {
+                                await db.collection('orders').doc(o.id).delete();
+                                console.log('Order deleted:', o.id);
+                            }
+                        }
+                        
+                        // Remove from local array
+                        customers = customers.filter(c => c.id !== customerId);
+                        orders = orders.filter(o => normalizePhone(o.customerPhone) !== customerPhone);
+                        
+                        // If this is the current logged in customer, logout
+                        if (currentCustomer && normalizePhone(currentCustomer.phone) === customerPhone) {
+                            currentCustomer = null;
+                            localStorage.removeItem('varshaCurrentCustomer');
+                            updateCustomerBar();
+                            renderCart();
+                        }
+                        
+                        // Update UI
+                        renderAdminCustomers();
+                        renderAdminOrders();
+                        showToast('✓ Customer berhasil dihapus!');
+                        
+                    } catch (e) {
+                        console.error('Delete customer error:', e);
+                        showToast('Gagal menghapus: ' + e.message);
+                    }
+                }
+            });
         }
 
         // Admin Products
@@ -2321,8 +2390,14 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             btn.className = `flex-1 ${btnClass || 'bg-red-500 hover:bg-red-600'} text-white py-3 rounded-xl font-semibold transition`;
             btn.innerHTML = `<i class="fas fa-check mr-2"></i>${btnText || 'Ya, Lanjutkan'}`;
             
+            // Store callback and set onclick handler
             confirmCallback = onConfirm;
-            btn.onclick = executeConfirm;
+            btn.onclick = function() {
+                closeConfirmModal();
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+            };
             
             document.getElementById('confirmModal').classList.remove('hidden');
         }
