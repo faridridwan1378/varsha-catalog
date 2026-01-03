@@ -11,6 +11,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <!-- SheetJS for Excel Export -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -306,14 +307,31 @@
             
             <div id="adminLogin" class="bg-white rounded-2xl shadow-lg p-6">
                 <div class="text-center mb-6">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <i class="fas fa-lock text-gray-400 text-2xl"></i>
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-user-shield text-green-600 text-2xl"></i>
                     </div>
-                    <h3 class="font-bold text-lg">Masuk Admin</h3>
-                    <p class="text-gray-500 text-sm">Masukkan PIN untuk mengakses</p>
+                    <h3 class="font-bold text-lg">Login Admin</h3>
+                    <p class="text-gray-500 text-sm">Masukkan email dan password</p>
                 </div>
-                <input type="password" id="adminPin" placeholder="Masukkan PIN" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl tracking-widest mb-4" maxlength="6">
-                <button onclick="loginAdmin()" class="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">Masuk</button>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">Email</label>
+                        <input type="email" id="adminEmail" placeholder="admin@varsha.com" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">Password</label>
+                        <input type="password" id="adminPassword" placeholder="••••••••" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    </div>
+                </div>
+                <button onclick="loginAdmin()" id="loginBtn" class="w-full mt-4 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+                <p id="loginError" class="text-red-500 text-sm text-center mt-3 hidden"></p>
+                <div class="mt-4 p-3 bg-blue-50 rounded-xl">
+                    <p class="text-xs text-blue-700 text-center">
+                        <i class="fas fa-shield-alt mr-1"></i> Dilindungi oleh Firebase Authentication
+                    </p>
+                </div>
             </div>
 
             <div id="adminPanel" class="hidden">
@@ -516,12 +534,23 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
 
                     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
                         <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-key text-purple-500"></i> Ubah PIN Admin
+                            <i class="fas fa-user-shield text-purple-500"></i> Info Admin
                         </h3>
-                        <input type="password" id="newPin" placeholder="PIN Baru (minimal 4 digit)" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-3" maxlength="6">
-                        <button onclick="changePin()" class="w-full bg-purple-500 text-white py-2 rounded-xl font-medium hover:bg-purple-600 transition">
-                            <i class="fas fa-save mr-2"></i>Ubah PIN
-                        </button>
+                        <div id="adminUserInfo" class="p-3 bg-green-50 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800" id="adminEmailDisplay">-</p>
+                                    <p class="text-xs text-green-600"><i class="fas fa-check-circle mr-1"></i>Login dengan Firebase Auth</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">
+                            <i class="fas fa-info-circle mr-1"></i> 
+                            Untuk menambah/mengelola admin, buka <a href="https://console.firebase.google.com" target="_blank" class="text-blue-500 underline">Firebase Console</a> → Authentication → Users
+                        </p>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
@@ -1045,7 +1074,9 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         let currentOrderFilter = 'all';
         let deleteProductId = null;
         let db = null;
+        let auth = null;
         let isFirebaseConnected = false;
+        let currentAdminUser = null;
 
         // Normalize phone number (628xx, 08xx, 8xx -> same number)
         function normalizePhone(phone) {
@@ -1088,6 +1119,29 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                     firebase.initializeApp(firebaseConfig);
                 }
                 db = firebase.firestore();
+                auth = firebase.auth();
+                
+                // Listen for auth state changes
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        currentAdminUser = user;
+                        console.log('Admin logged in:', user.email);
+                        // Auto show admin panel if on admin page
+                        if (document.getElementById('adminPage').classList.contains('active')) {
+                            isAdminLoggedIn = true;
+                            document.getElementById('adminLogin').classList.add('hidden');
+                            document.getElementById('adminPanel').classList.remove('hidden');
+                            renderAdminOrders();
+                            renderAdminCustomers();
+                            renderAdminProductList();
+                            loadStoreProfileToForm();
+                        }
+                    } else {
+                        currentAdminUser = null;
+                        isAdminLoggedIn = false;
+                    }
+                });
+                
                 loadFromFirebase();
                 return true;
             } catch (e) {
@@ -1940,28 +1994,89 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         }
 
         // Admin Functions
-        function loginAdmin() {
-            if (document.getElementById('adminPin').value === settings.pin) {
+        async function loginAdmin() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginError = document.getElementById('loginError');
+            
+            // Validation
+            if (!email || !password) {
+                loginError.textContent = 'Email dan password wajib diisi!';
+                loginError.classList.remove('hidden');
+                return;
+            }
+            
+            // Show loading
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            loginError.classList.add('hidden');
+            
+            try {
+                // Sign in with Firebase Auth
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                currentAdminUser = userCredential.user;
                 isAdminLoggedIn = true;
+                
                 document.getElementById('adminLogin').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
-                document.getElementById('adminPin').value = '';
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+                
                 renderAdminOrders();
                 renderAdminCustomers();
                 renderAdminProductList();
                 loadStoreProfileToForm();
                 document.getElementById('waNumber').value = settings.waNumber;
-                showToast('Login berhasil! ✓');
-            } else {
-                showToast('PIN salah!');
+                
+                showToast(`Login berhasil! Selamat datang ${userCredential.user.email} ✓`);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Handle specific errors
+                let errorMessage = 'Login gagal!';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'Email tidak terdaftar!';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Password salah!';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Format email tidak valid!';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Terlalu banyak percobaan. Coba lagi nanti!';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Koneksi gagal. Periksa internet Anda!';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                loginError.textContent = errorMessage;
+                loginError.classList.remove('hidden');
+            } finally {
+                // Reset button
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Masuk';
             }
         }
 
-        function logoutAdmin() {
-            isAdminLoggedIn = false;
-            document.getElementById('adminLogin').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            showToast('Berhasil logout');
+        async function logoutAdmin() {
+            try {
+                await auth.signOut();
+                currentAdminUser = null;
+                isAdminLoggedIn = false;
+                document.getElementById('adminLogin').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                showToast('Berhasil logout');
+            } catch (error) {
+                console.error('Logout error:', error);
+                showToast('Gagal logout: ' + error.message);
+            }
         }
 
         function switchAdminTab(tab) {
@@ -1973,6 +2088,10 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             document.getElementById(tab + 'Tab').classList.remove('hidden');
             
             // Load data for specific tabs
+            if (tab === 'orders') renderAdminOrders();
+            if (tab === 'customers') renderAdminCustomers();
+            if (tab === 'catalog') renderAdminProductList();
+            if (tab === 'settings') updateAdminEmailDisplay();
             if (tab === 'hero') loadHeroSettingsToForm();
             if (tab === 'firebase') loadFirebaseConfigToForm();
         }
@@ -2514,14 +2633,11 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             document.getElementById('displayWA').textContent = '+' + settings.waNumber.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1 $2-$3-$4');
         }
 
-        async function changePin() {
-            const newPin = document.getElementById('newPin').value;
-            if (newPin.length < 4) { showToast('PIN minimal 4 digit!'); return; }
-            settings.pin = newPin;
-            localStorage.setItem('varshaSettings', JSON.stringify(settings));
-            await saveToFirebase('settings', 'store', settings);
-            document.getElementById('newPin').value = '';
-            showToast('PIN berhasil diubah! ✓');
+        function updateAdminEmailDisplay() {
+            const display = document.getElementById('adminEmailDisplay');
+            if (display && currentAdminUser) {
+                display.textContent = currentAdminUser.email;
+            }
         }
 
         async function uploadAllToFirebase() {
