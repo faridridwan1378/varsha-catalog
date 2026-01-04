@@ -401,6 +401,7 @@
                         <button onclick="filterOrders('confirmed')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Dikonfirmasi</button>
                         <button onclick="filterOrders('shipped')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Dikirim</button>
                         <button onclick="filterOrders('completed')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Selesai</button>
+                        <button onclick="filterOrders('cancelled')" class="order-filter px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">Dibatalkan</button>
                     </div>
                     <div id="adminOrdersList" class="space-y-3"></div>
                     <div id="adminOrdersEmpty" class="text-center py-8 hidden">
@@ -985,6 +986,43 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                 </button>
             </div>
             <div id="orderDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
+    <div id="cancelOrderModal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Batalkan Pesanan</h3>
+                <button onclick="closeCancelOrderModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-times text-gray-600"></i>
+                </button>
+            </div>
+            
+            <div id="cancelOrderInfo" class="bg-red-50 rounded-xl p-3 mb-4">
+                <!-- Order info will be inserted here -->
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Alasan Pembatalan *</label>
+                <textarea id="cancelReason" rows="3" placeholder="Contoh: Stok habis, Customer membatalkan, Alamat tidak valid, dll..." class="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none" required></textarea>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
+                <div class="flex items-start gap-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                    <p class="text-sm text-yellow-800">Pesanan yang dibatalkan tidak dapat dikembalikan. Customer akan menerima notifikasi pembatalan via WhatsApp.</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="closeCancelOrderModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Kembali
+                </button>
+                <button onclick="confirmCancelOrder()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">
+                    <i class="fas fa-times mr-2"></i>Batalkan Pesanan
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2027,6 +2065,12 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                     <div class="flex justify-between items-center">
                         <span class="font-bold text-green-600">Rp ${(order.total || 0).toLocaleString('id-ID')}</span>
                     </div>
+                    ${order.status === 'cancelled' && order.cancelReason ? `
+                        <div class="mt-2 p-2 bg-red-50 rounded-lg border border-red-100">
+                            <p class="text-xs text-gray-500">Alasan Pembatalan:</p>
+                            <p class="text-sm text-red-700">${order.cancelReason}</p>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
@@ -2049,6 +2093,19 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                 <div class="mb-4">
                     <span class="status-${order.status} px-3 py-1 rounded-full text-xs font-medium">${getStatusLabel(order.status)}</span>
                 </div>
+                
+                ${order.status === 'cancelled' && order.cancelReason ? `
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-times-circle text-red-500 mt-0.5"></i>
+                            <div>
+                                <p class="text-sm font-medium text-red-800">Pesanan Dibatalkan</p>
+                                <p class="text-sm text-red-700 mt-1">${order.cancelReason}</p>
+                                ${order.cancelledAt ? `<p class="text-xs text-red-500 mt-1">${formatDate(order.cancelledAt)}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
                 
                 <div class="bg-gray-50 rounded-xl p-3 mb-4">
                     <p class="text-xs text-gray-500 mb-1">Order ID</p>
@@ -2292,6 +2349,19 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                     <button onclick="chatCustomer('62${normalizePhone(order.customerPhone)}', '${order.id}')" class="w-full mt-2 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-medium hover:bg-green-200">
                         <i class="fab fa-whatsapp mr-1"></i> Chat Customer
                     </button>
+
+                    ${order.status !== 'completed' && order.status !== 'cancelled' ? `
+                        <button onclick="showCancelOrderModal('${order.id}')" class="w-full mt-2 bg-red-100 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-200">
+                            <i class="fas fa-times mr-1"></i> Batalkan Pesanan
+                        </button>
+                    ` : ''}
+                    
+                    ${order.status === 'cancelled' && order.cancelReason ? `
+                        <div class="mt-2 p-2 bg-red-50 rounded-lg">
+                            <p class="text-xs text-gray-500">Alasan Pembatalan:</p>
+                            <p class="text-sm text-red-700">${order.cancelReason}</p>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
@@ -2374,6 +2444,77 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             updateOrderBadge();
 
             showToast('Order selesai! ✓');
+        }
+
+        let cancelOrderId = null;
+
+        function showCancelOrderModal(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            cancelOrderId = orderId;
+            
+            document.getElementById('cancelOrderInfo').innerHTML = `
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-shopping-bag text-red-600"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800">${order.id}</p>
+                        <p class="text-xs text-gray-500">${formatDate(order.createdAt)}</p>
+                    </div>
+                </div>
+                <div class="border-t border-red-200 pt-2 mt-2">
+                    <p class="text-sm"><strong>Customer:</strong> ${order.customerName}</p>
+                    <p class="text-sm"><strong>HP:</strong> ${formatPhoneDisplay(order.customerPhone)}</p>
+                    <p class="text-sm"><strong>Total:</strong> Rp ${order.total.toLocaleString('id-ID')}</p>
+                    <p class="text-sm"><strong>Items:</strong> ${order.items.map(i => i.name).join(', ')}</p>
+                </div>
+            `;
+            
+            document.getElementById('cancelReason').value = '';
+            document.getElementById('cancelOrderModal').classList.remove('hidden');
+        }
+
+        function closeCancelOrderModal() {
+            document.getElementById('cancelOrderModal').classList.add('hidden');
+            cancelOrderId = null;
+        }
+
+        async function confirmCancelOrder() {
+            if (!cancelOrderId) return;
+            
+            const reason = document.getElementById('cancelReason').value.trim();
+            if (!reason) {
+                showToast('Masukkan alasan pembatalan!');
+                return;
+            }
+            
+            const order = orders.find(o => o.id === cancelOrderId);
+            if (!order) return;
+
+            const updateData = {
+                status: 'cancelled',
+                cancelledAt: new Date().toISOString(),
+                cancelReason: reason
+            };
+
+            await saveToFirebase('orders', cancelOrderId, updateData);
+            Object.assign(order, updateData);
+            
+            // Close modal
+            closeCancelOrderModal();
+            
+            // Update UI
+            renderAdminOrders();
+            renderCustomerOrders();
+            updateOrderBadge();
+
+            // Notify customer via WhatsApp
+            const message = `Halo ${order.customerName},\n\nMohon maaf, pesanan Anda dengan ID: ${order.id} telah dibatalkan.\n\n📝 Alasan: ${reason}\n\nJika ada pertanyaan, silakan hubungi kami.\n\nTerima kasih 🙏`;
+            window.open(`https://wa.me/62${normalizePhone(order.customerPhone)}?text=${encodeURIComponent(message)}`, '_blank');
+
+            showToast('Pesanan dibatalkan');
         }
 
         function chatCustomer(phone, orderId) {
