@@ -61,6 +61,8 @@
         .status-cancelled { background: #fee2e2; color: #991b1b; }
         .order-card { transition: all 0.2s ease; }
         .order-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .price-original { text-decoration: line-through; color: #9ca3af; font-size: 12px; }
+        .badge-promo { background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     </style>
 </head>
 <body class="bg-gray-50 pb-20">
@@ -173,10 +175,13 @@
             <div id="featuredProducts" class="grid grid-cols-2 gap-3"></div>
 
             <!-- Promo Banner -->
-            <div id="promoBanner" class="bg-gradient-to-r from-orange-400 to-orange-500 rounded-2xl p-5 mt-6 text-white relative overflow-hidden">
+            <div id="promoBanner" class="bg-gradient-to-r from-orange-400 to-orange-500 rounded-2xl p-5 mt-6 text-white relative overflow-hidden cursor-pointer hover:shadow-lg transition" onclick="navigateTo('promo')">
                 <div id="promoDecor" class="absolute right-2 bottom-2 opacity-30 text-7xl">🍊</div>
-                <h3 id="promoTitle" class="font-bold text-lg mb-1 relative z-10">Buah Segar Setiap Hari!</h3>
-                <p id="promoSubtitle" class="text-sm opacity-90 relative z-10">Kualitas terbaik untuk keluarga Anda</p>
+                <h3 id="promoTitle" class="font-bold text-lg mb-1 relative z-10">🔥 Promo Spesial!</h3>
+                <p id="promoSubtitle" class="text-sm opacity-90 relative z-10">Lihat produk dengan harga terbaik</p>
+                <button class="mt-3 bg-white text-orange-600 px-4 py-1.5 rounded-full font-semibold text-sm hover:bg-orange-50 transition relative z-10">
+                    Lihat Promo <i class="fas fa-arrow-right ml-1"></i>
+                </button>
             </div>
         </div>
 
@@ -193,6 +198,27 @@
             </div>
 
             <div id="productGrid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Promo Page -->
+        <div id="promoPage" class="page fade-in">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-fire text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Promo Spesial 🔥</h2>
+                    <p class="text-sm text-gray-500">Harga terbaik untuk Anda!</p>
+                </div>
+            </div>
+            
+            <div id="promoProductGrid" class="grid grid-cols-2 gap-3"></div>
+            
+            <div id="promoEmpty" class="hidden text-center py-12">
+                <span class="text-6xl">🏷️</span>
+                <p class="text-gray-500 mt-4">Belum ada promo saat ini</p>
+                <button onclick="navigateTo('katalog')" class="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition">Lihat Katalog</button>
+            </div>
         </div>
 
         <!-- Keranjang Page -->
@@ -823,21 +849,25 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div class="max-w-lg mx-auto flex justify-around py-2">
-            <button onclick="navigateTo('katalog')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition">
+            <button onclick="navigateTo('katalog')" class="nav-item flex flex-col items-center py-2 px-3 text-gray-400 transition">
                 <i class="fas fa-store text-xl mb-1"></i>
                 <span class="text-xs">Katalog</span>
             </button>
-            <button onclick="navigateTo('keranjang')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition relative">
+            <button onclick="navigateTo('promo')" class="nav-item flex flex-col items-center py-2 px-3 text-gray-400 transition">
+                <i class="fas fa-fire text-xl mb-1"></i>
+                <span class="text-xs">Promo</span>
+            </button>
+            <button onclick="navigateTo('keranjang')" class="nav-item flex flex-col items-center py-2 px-3 text-gray-400 transition relative">
                 <i class="fas fa-shopping-cart text-xl mb-1"></i>
                 <span id="cartBadge" class="badge hidden">0</span>
                 <span class="text-xs">Keranjang</span>
             </button>
-            <button onclick="navigateTo('pesanan')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition relative">
+            <button onclick="navigateTo('pesanan')" class="nav-item flex flex-col items-center py-2 px-3 text-gray-400 transition relative">
                 <i class="fas fa-clipboard-list text-xl mb-1"></i>
                 <span id="orderBadge" class="badge hidden">0</span>
                 <span class="text-xs">Pesanan</span>
             </button>
-            <button onclick="navigateTo('admin')" class="nav-item flex flex-col items-center py-2 px-4 text-gray-400 transition">
+            <button onclick="navigateTo('admin')" class="nav-item flex flex-col items-center py-2 px-3 text-gray-400 transition">
                 <i class="fas fa-cog text-xl mb-1"></i>
                 <span class="text-xs">Admin</span>
             </button>
@@ -906,19 +936,25 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                         <input type="number" id="productPrice" required class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Harga Promo (Rp)</label>
+                        <input type="number" id="productPromoPrice" placeholder="Kosongkan jika tidak promo" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Satuan *</label>
                         <input type="text" id="productUnit" required placeholder="kg, ikat, buah" class="w-full px-4 py-3 border border-gray-200 rounded-xl">
                     </div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
-                    <select id="productCategory" required class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
-                        <option value="">Pilih Kategori</option>
-                        <option value="Buah">🍎 Buah</option>
-                        <option value="Sayuran">🥬 Sayuran</option>
-                        <option value="Bumbu">🌶️ Bumbu</option>
-                        <option value="Lainnya">📦 Lainnya</option>
-                    </select>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
+                        <select id="productCategory" required class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white">
+                            <option value="">Pilih Kategori</option>
+                            <option value="Buah">🍎 Buah</option>
+                            <option value="Sayuran">🥬 Sayuran</option>
+                            <option value="Bumbu">🌶️ Bumbu</option>
+                            <option value="Lainnya">📦 Lainnya</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">URL Gambar *</label>
@@ -1011,32 +1047,32 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         // Default Products
         const defaultProducts = [
             // BUAH (8 produk)
-            { id: 1, name: "Apel Fuji Premium", price: 45000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import dari Jepang, manis dan renyah" },
-            { id: 2, name: "Jeruk Mandarin", price: 38000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji, kaya vitamin C" },
-            { id: 3, name: "Mangga Harum Manis", price: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga lokal pilihan super manis dan harum" },
-            { id: 4, name: "Anggur Red Globe", price: 75000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah segar import, manis dan berair" },
-            { id: 5, name: "Pisang Cavendish", price: 28000, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang premium kualitas ekspor, matang sempurna" },
-            { id: 6, name: "Semangka Merah", price: 35000, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah tanpa biji, segar dan manis" },
-            { id: 7, name: "Strawberry Fresh", price: 55000, unit: "pack", category: "Buah", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400", desc: "Strawberry segar dari dataran tinggi, manis asam segar" },
-            { id: 8, name: "Alpukat Mentega", price: 40000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400", desc: "Alpukat mentega super lembut, cocok untuk jus" },
+            { id: 1, name: "Apel Fuji Premium", price: 45000, promoPrice: 35000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400", desc: "Apel Fuji segar import dari Jepang, manis dan renyah" },
+            { id: 2, name: "Jeruk Mandarin", price: 38000, promoPrice: 0, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=400", desc: "Jeruk mandarin manis tanpa biji, kaya vitamin C" },
+            { id: 3, name: "Mangga Harum Manis", price: 35000, promoPrice: 28000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400", desc: "Mangga lokal pilihan super manis dan harum" },
+            { id: 4, name: "Anggur Red Globe", price: 75000, promoPrice: 65000, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400", desc: "Anggur merah segar import, manis dan berair" },
+            { id: 5, name: "Pisang Cavendish", price: 28000, promoPrice: 0, unit: "sisir", category: "Buah", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400", desc: "Pisang premium kualitas ekspor, matang sempurna" },
+            { id: 6, name: "Semangka Merah", price: 35000, promoPrice: 0, unit: "buah", category: "Buah", image: "https://images.unsplash.com/photo-1589984662646-e7b2e4f5989d?w=400", desc: "Semangka merah tanpa biji, segar dan manis" },
+            { id: 7, name: "Strawberry Fresh", price: 55000, promoPrice: 45000, unit: "pack", category: "Buah", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400", desc: "Strawberry segar dari dataran tinggi, manis asam segar" },
+            { id: 8, name: "Alpukat Mentega", price: 40000, promoPrice: 0, unit: "kg", category: "Buah", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400", desc: "Alpukat mentega super lembut, cocok untuk jus" },
             
             // SAYURAN (6 produk)
-            { id: 9, name: "Bayam Organik", price: 8000, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam segar organik bebas pestisida" },
-            { id: 10, name: "Brokoli Segar", price: 22000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar dan renyah, kaya nutrisi" },
-            { id: 11, name: "Wortel Import", price: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel manis import Australia, bagus untuk jus" },
-            { id: 12, name: "Tomat Cherry", price: 25000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry manis untuk salad dan garnish" },
-            { id: 13, name: "Selada Romaine", price: 15000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400", desc: "Selada romaine segar untuk salad sehat" },
-            { id: 14, name: "Paprika Mix", price: 35000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400", desc: "Paprika merah, kuning, hijau segar dan renyah" },
+            { id: 9, name: "Bayam Organik", price: 8000, promoPrice: 0, unit: "ikat", category: "Sayuran", image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400", desc: "Bayam segar organik bebas pestisida" },
+            { id: 10, name: "Brokoli Segar", price: 22000, promoPrice: 18000, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400", desc: "Brokoli hijau segar dan renyah, kaya nutrisi" },
+            { id: 11, name: "Wortel Import", price: 18000, promoPrice: 0, unit: "kg", category: "Sayuran", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400", desc: "Wortel manis import Australia, bagus untuk jus" },
+            { id: 12, name: "Tomat Cherry", price: 25000, promoPrice: 20000, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1546470427-227c7b0f5654?w=400", desc: "Tomat cherry manis untuk salad dan garnish" },
+            { id: 13, name: "Selada Romaine", price: 15000, promoPrice: 0, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400", desc: "Selada romaine segar untuk salad sehat" },
+            { id: 14, name: "Paprika Mix", price: 35000, promoPrice: 0, unit: "pack", category: "Sayuran", image: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400", desc: "Paprika merah, kuning, hijau segar dan renyah" },
             
             // BUMBU (4 produk)
-            { id: 15, name: "Cabai Merah Keriting", price: 55000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas segar pilihan" },
-            { id: 16, name: "Bawang Merah", price: 38000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan, aroma kuat" },
-            { id: 17, name: "Bawang Putih", price: 45000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import kualitas super" },
-            { id: 18, name: "Jahe Merah", price: 35000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe merah segar untuk jamu dan masakan" },
+            { id: 15, name: "Cabai Merah Keriting", price: 55000, promoPrice: 48000, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400", desc: "Cabai merah keriting pedas segar pilihan" },
+            { id: 16, name: "Bawang Merah", price: 38000, promoPrice: 0, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400", desc: "Bawang merah lokal pilihan, aroma kuat" },
+            { id: 17, name: "Bawang Putih", price: 45000, promoPrice: 0, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1540148426945-6cf22a6b2571?w=400", desc: "Bawang putih import kualitas super" },
+            { id: 18, name: "Jahe Merah", price: 35000, promoPrice: 0, unit: "kg", category: "Bumbu", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400", desc: "Jahe merah segar untuk jamu dan masakan" },
             
             // LAINNYA (2 produk)
-            { id: 19, name: "Madu Hutan Murni", price: 95000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml, kualitas premium" },
-            { id: 20, name: "Telur Ayam Kampung", price: 52000, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik 30 butir, lebih sehat" }
+            { id: 19, name: "Madu Hutan Murni", price: 95000, promoPrice: 85000, unit: "botol", category: "Lainnya", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400", desc: "Madu murni asli hutan 500ml, kualitas premium" },
+            { id: 20, name: "Telur Ayam Kampung", price: 52000, promoPrice: 0, unit: "tray", category: "Lainnya", image: "https://images.unsplash.com/photo-1569288063643-5d29ad64df09?w=400", desc: "Telur ayam kampung organik 30 butir, lebih sehat" }
         ];
 
         const defaultStoreProfile = {
@@ -1491,6 +1527,7 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         function renderAll() {
             renderFeaturedProducts();
             renderProducts();
+            renderPromoProducts();
             updateCartBadge();
             updateOrderBadge();
             updateDisplayWA();
@@ -1596,18 +1633,71 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             container.innerHTML = filtered.map(p => createProductCard(p)).join('');
         }
 
+        function renderPromoProducts() {
+            const container = document.getElementById('promoProductGrid');
+            const emptyEl = document.getElementById('promoEmpty');
+            
+            // Filter produk yang memiliki harga promo
+            const promoProducts = products.filter(p => 
+                p.promoPrice && p.promoPrice > 0 && p.promoPrice < p.price
+            );
+            
+            if (promoProducts.length === 0) {
+                container.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+            
+            emptyEl.classList.add('hidden');
+            container.innerHTML = promoProducts.map(p => createPromoCard(p)).join('');
+        }
+
+        function createPromoCard(product) {
+            const savings = product.price - product.promoPrice;
+            const discountPercent = Math.round((savings / product.price) * 100);
+            
+            return `
+                <div class="product-card bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer" onclick="showProductDetail('${product.id}')">
+                    <div class="relative">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+                        <span class="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">-${discountPercent}%</span>
+                        <span class="absolute top-2 right-2 badge-promo">🔥 PROMO</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm text-gray-800 truncate">${product.name}</h3>
+                        <p class="text-xs text-gray-500">per ${product.unit}</p>
+                        <div class="mt-2">
+                            <span class="price-original block">Rp ${product.price.toLocaleString('id-ID')}</span>
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-green-600 text-lg">Rp ${product.promoPrice.toLocaleString('id-ID')}</span>
+                                <button onclick="event.stopPropagation(); addToCart('${product.id}')" class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition"><i class="fas fa-plus text-sm"></i></button>
+                            </div>
+                            <p class="text-xs text-red-500 mt-1"><i class="fas fa-tag mr-1"></i>Hemat Rp ${savings.toLocaleString('id-ID')}!</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         function createProductCard(product) {
+            const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price;
+            const displayPrice = hasPromo ? product.promoPrice : product.price;
+            
             return `
                 <div class="product-card bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer" onclick="showProductDetail('${product.id}')">
                     <div class="relative">
                         <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
                         <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">${product.category}</span>
+                        ${hasPromo ? '<span class="absolute top-2 right-2 badge-promo">🔥 PROMO</span>' : ''}
                     </div>
                     <div class="p-3">
                         <h3 class="font-semibold text-sm text-gray-800 truncate">${product.name}</h3>
                         <p class="text-xs text-gray-500">per ${product.unit}</p>
                         <div class="flex justify-between items-center mt-2">
-                            <span class="font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
+                            <div>
+                                ${hasPromo ? `<span class="price-original block">Rp ${product.price.toLocaleString('id-ID')}</span>` : ''}
+                                <span class="font-bold text-green-600 ${hasPromo ? 'text-base' : ''}">Rp ${displayPrice.toLocaleString('id-ID')}</span>
+                            </div>
                             <button onclick="event.stopPropagation(); addToCart('${product.id}')" class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition"><i class="fas fa-plus text-sm"></i></button>
                         </div>
                     </div>
@@ -1618,15 +1708,23 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         function showProductDetail(id) {
             const product = products.find(p => p.id.toString() === id.toString());
             if (!product) return;
+            const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price;
+            const displayPrice = hasPromo ? product.promoPrice : product.price;
+            
             document.getElementById('modalContent').innerHTML = `
                 <img src="${product.image}" alt="${product.name}" class="w-full h-56 object-cover rounded-2xl mb-4">
-                <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">${product.category}</span>
+                <div class="flex gap-2 items-center flex-wrap">
+                    <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">${product.category}</span>
+                    ${hasPromo ? '<span class="badge-promo">🔥 PROMO</span>' : ''}
+                </div>
                 <h2 class="text-xl font-bold text-gray-800 mt-2">${product.name}</h2>
                 <p class="text-gray-500 text-sm mt-1">${product.desc}</p>
-                <div class="flex items-baseline gap-2 mt-3">
-                    <span class="text-2xl font-bold text-green-600">Rp ${product.price.toLocaleString('id-ID')}</span>
+                <div class="flex items-baseline gap-2 mt-3 flex-wrap">
+                    ${hasPromo ? `<span class="text-lg price-original">Rp ${product.price.toLocaleString('id-ID')}</span>` : ''}
+                    <span class="text-2xl font-bold text-green-600">Rp ${displayPrice.toLocaleString('id-ID')}</span>
                     <span class="text-gray-500 text-sm">/ ${product.unit}</span>
                 </div>
+                ${hasPromo ? `<p class="text-sm text-red-500 mt-1"><i class="fas fa-tag mr-1"></i>Hemat Rp ${(product.price - product.promoPrice).toLocaleString('id-ID')}!</p>` : ''}
                 <button onclick="addToCart('${product.id}'); closeModal()" class="w-full mt-6 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
                     <i class="fas fa-cart-plus mr-2"></i> Tambah ke Keranjang
                 </button>
@@ -1721,12 +1819,20 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             container.innerHTML = cart.map(item => {
                 const product = products.find(p => p.id.toString() === item.id.toString());
                 if (!product) return '';
+                const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price;
+                const displayPrice = hasPromo ? product.promoPrice : product.price;
                 return `
                     <div class="bg-white rounded-xl shadow-md p-3 mb-3 flex gap-3">
-                        <img src="${product.image}" class="w-20 h-20 object-cover rounded-lg">
+                        <div class="relative">
+                            <img src="${product.image}" class="w-20 h-20 object-cover rounded-lg">
+                            ${hasPromo ? '<span class="absolute -top-1 -right-1 badge-promo text-[8px] px-1">PROMO</span>' : ''}
+                        </div>
                         <div class="flex-1">
                             <h4 class="font-semibold text-gray-800 text-sm">${product.name}</h4>
-                            <p class="text-green-600 font-bold text-sm">Rp ${product.price.toLocaleString('id-ID')}/${product.unit}</p>
+                            <div class="flex items-center gap-2">
+                                ${hasPromo ? `<span class="price-original text-xs">Rp ${product.price.toLocaleString('id-ID')}</span>` : ''}
+                                <p class="text-green-600 font-bold text-sm">Rp ${displayPrice.toLocaleString('id-ID')}/${product.unit}</p>
+                            </div>
                             <div class="flex items-center justify-between mt-2">
                                 <div class="flex items-center gap-2">
                                     <button onclick="updateQty('${item.id}', -1)" class="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"><i class="fas fa-minus text-xs"></i></button>
@@ -1747,7 +1853,10 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             const cart = getCart();
             const total = cart.reduce((sum, item) => {
                 const product = products.find(p => p.id.toString() === item.id.toString());
-                return sum + (product ? product.price * item.qty : 0);
+                if (!product) return sum;
+                const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price;
+                const price = hasPromo ? product.promoPrice : product.price;
+                return sum + (price * item.qty);
             }, 0);
             document.getElementById('totalPrice').textContent = `Rp ${total.toLocaleString('id-ID')}`;
         }
@@ -2414,6 +2523,7 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             document.getElementById('formModalTitle').textContent = 'Tambah Produk';
             document.getElementById('productForm').reset();
             document.getElementById('editProductId').value = '';
+            document.getElementById('productPromoPrice').value = '';
             document.getElementById('imagePreview').classList.add('hidden');
             document.getElementById('productFormModal').classList.remove('hidden');
         }
@@ -2425,6 +2535,7 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             document.getElementById('editProductId').value = id;
             document.getElementById('productName').value = product.name;
             document.getElementById('productPrice').value = product.price;
+            document.getElementById('productPromoPrice').value = product.promoPrice || '';
             document.getElementById('productUnit').value = product.unit;
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productImage').value = product.image;
@@ -2441,9 +2552,11 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
         async function saveProduct(e) {
             e.preventDefault();
             const editId = document.getElementById('editProductId').value;
+            const promoPrice = parseInt(document.getElementById('productPromoPrice').value) || 0;
             const data = {
                 name: document.getElementById('productName').value.trim(),
                 price: parseInt(document.getElementById('productPrice').value),
+                promoPrice: promoPrice,
                 unit: document.getElementById('productUnit').value.trim(),
                 category: document.getElementById('productCategory').value,
                 image: document.getElementById('productImage').value.trim(),
@@ -3511,6 +3624,7 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             document.getElementById(page + 'Page').classList.add('active');
             if (page === 'keranjang') renderCart();
             if (page === 'katalog') renderProducts();
+            if (page === 'promo') renderPromoProducts();
             if (page === 'pesanan') {
                 renderCustomerOrders();
                 updateOrderBadge();
