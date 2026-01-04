@@ -2635,7 +2635,18 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
             if (!customerCancelOrderId) return;
             
             const order = orders.find(o => o.id === customerCancelOrderId);
-            if (!order) return;
+            if (!order) {
+                showToast('Pesanan tidak ditemukan!');
+                closeCustomerCancelModal();
+                return;
+            }
+            
+            // Pastikan status masih pending
+            if (order.status !== 'pending') {
+                showToast('Pesanan tidak dapat dibatalkan!');
+                closeCustomerCancelModal();
+                return;
+            }
             
             const reason = document.getElementById('customerCancelReason').value.trim() || 'Dibatalkan oleh customer';
             
@@ -2647,7 +2658,13 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                     cancelledBy: 'customer'
                 };
 
-                await saveToFirebase('orders', customerCancelOrderId, updateData);
+                // Update langsung ke Firebase dengan db.collection
+                if (db && isFirebaseConnected) {
+                    await db.collection('orders').doc(customerCancelOrderId).update(updateData);
+                    console.log('Order cancelled in Firebase:', customerCancelOrderId);
+                }
+                
+                // Update local order object
                 Object.assign(order, updateData);
                 
                 // Tutup modal
@@ -2657,14 +2674,10 @@ Jeruk Mandarin	38000	kg	Buah	https://images.unsplash.com/photo-1547514701-427821
                 renderCustomerOrders();
                 updateOrderBadge();
 
-                // Notifikasi ke admin via WhatsApp
-                const message = `❌ PEMBATALAN PESANAN\n\nOrder ID: ${customerCancelOrderId}\nCustomer: ${order.customerName}\nHP: ${order.customerPhone}\n\nTotal: Rp ${order.total.toLocaleString('id-ID')}\n\nAlasan: ${reason}`;
-                window.open(`https://wa.me/${settings.waNumber}?text=${encodeURIComponent(message)}`, '_blank');
-
                 showToast('Pesanan berhasil dibatalkan');
             } catch (error) {
                 console.error('Error cancelling order:', error);
-                showToast('Gagal membatalkan pesanan!');
+                showToast('Gagal membatalkan pesanan: ' + error.message);
             }
         }
 
